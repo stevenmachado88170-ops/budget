@@ -8,9 +8,10 @@ const PORT = +process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 const DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PUB = path.join(__dirname, 'public');
-const F = { data: path.join(DIR, 'budget.json'), users: path.join(DIR, 'users.json'), resets: path.join(DIR, 'resets.json'), key: path.join(DIR, 'secret.key') };
+const F = { data: path.join(DIR, 'budget.json'), users: path.join(DIR, 'users.json'), resets: path.join(DIR, 'resets.json'), settings: path.join(DIR, 'settings.json'), key: path.join(DIR, 'secret.key') };
 fs.mkdirSync(DIR, { recursive: true, mode: 0o700 });
 
+let secret;
 const readJSON = (p, d) => { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return d; } };
 const writeJSON = (p, o) => { const t = p + '.tmp'; fs.writeFileSync(t, JSON.stringify(o), { mode: 0o600 }); fs.renameSync(t, p); };
 const users = () => { const u = readJSON(F.users, null); return u && u.users ? u : { order: [], users: {} }; };
@@ -49,12 +50,37 @@ function cli() {
   })();
 }
 
+const skey = () => crypto.createHash('sha256').update('smtp:' + secret).digest();
+const encPw = t => {
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', skey(), iv);
+  const ct = Buffer.concat([c.update(t, 'utf8'), c.final()]);
+  return [iv, c.getAuthTag(), ct].map(x => x.toString('base64')).join('.');
+};
+const decPw = t => {
+  const [iv, tag, ct] = t.split('.').map(x => Buffer.from(x, 'base64'));
+  const d = crypto.createDecipheriv('aes-256-gcm', skey(), iv); d.setAuthTag(tag);
+  return Buffer.concat([d.update(ct), d.final()]).toString('utf8');
+};
+// Réglages e-mail : fichier settings.json d'abord, variables d'environnement en secours.
+function smtpConf() {
+  const s = readJSON(F.settings, {}), m = s.smtp || {};
+  let pass = process.env.SMTP_PASS;
+  if (m.pass) { try { pass = decPw(m.pass); } catch (e) { pass = undefined; } }
+  const port = +(m.port || process.env.SMTP_PORT) || 587;
+  const user = m.host ? m.user : process.env.SMTP_USER;
+  return {
+    host: m.host || process.env.SMTP_HOST, port, user, pass,
+    secure: m.host ? !!m.secure : process.env.SMTP_SECURE === '1',
+    from: m.host ? (m.from || m.user) : (process.env.SMTP_FROM || process.env.SMTP_USER),
+    base: String(s.baseUrl || process.env.BASE_URL || '').replace(/\/+$/, '')
+  };
+}
+
 // Envoi d'e-mail (SMTP) sans dépendance : TLS implicite (465) ou STARTTLS (587).
 function smtp(to, subject, text) {
   return new Promise((resolve, reject) => {
-    const host = process.env.SMTP_HOST, port = +process.env.SMTP_PORT || 587;
-    const user = process.env.SMTP_USER, pass = process.env.SMTP_PASS, from = process.env.SMTP_FROM || user;
-    const secure = port === 465 || process.env.SMTP_SECURE === '1';
+    const c = smtpConf(), host = c.host, port = c.port, user = c.user, pass = c.pass, from = c.from;
+    const secure = port === 465 || c.secure;
     if (!host || !from) return reject(new Error('SMTP non configuré'));
     if (!EMAIL.test(to)) return reject(new Error('adresse invalide'));
     const addr = (/<([^>]+)>/.exec(from) || [])[1] || from;
@@ -105,8 +131,31 @@ function smtp(to, subject, text) {
 function main() {
   const BASE = (process.env.BASE_URL || '').replace(/\/+$/, '');
   const lim = (max, ms) => { const m = new Map(); return k => { const a = (m.get(k) || []).filter(t => Date.now() - t < ms); a.push(Date.now()); m.set(k, a); return a.length > max; }; };
-  const forgotLim = lim(5, 36e5), resetLim = lim(10, 6e5);
-  let secret;
+  const forgotLim = lim(5, 36e5), resetLim = lim(10, 6e5), pwLim = lim(15, 6e5), testLim = lim(5, 6e5);
+  const pub = (id, u) => ({ id, name: u.name, avatar: u.avatar || '', theme: u.theme || 'auto', accent: u.accent || '' });
+  const pwOk = (u, pw) => {
+    if (!u || typeof pw !== 'string') return false;
+    const h = Buffer.from(hashPw(pw, u.salt), 'hex'), g = Buffer.from(u.hash, 'hex');
+    return h.length === g.length && crypto.timingSafeEqual(h, g);
+  };
+  // Crée un lien de réinitialisation et l'envoie par e-mail. Renvoie un statut.
+  const issueReset = async (id, u) => {
+    const C = smtpConf();
+    if (!u.email) return 'no-email';
+    if (!C.base) { console.error('Adresse publique non définie : aucun lien envoyé.'); return 'no-base'; }
+    const R = readJSON(F.resets, {}), now = Date.now();
+    const sent = ((R[id] || {}).sent || []).filter(t => now - t < 36e5);
+    if (sent.length >= 3) return 'limited';
+    const sec = crypto.randomBytes(32).toString('base64url');
+    R[id] = { h: crypto.createHash('sha256').update(sec).digest('hex'), exp: now + 18e5, sent: sent.concat(now) };
+    writeJSON(F.resets, R);
+    const link = C.base + '/reset.html#' + id + '.' + sec;
+    const text = 'Bonjour ' + u.name + ',\n\nTu as demandé à changer ton mot de passe du budget. Ouvre ce lien (valable 30 minutes, utilisable une seule fois) :\n\n' + link + '\n\nSi ce n’est pas toi, ignore ce message : ton mot de passe reste inchangé.\n';
+    if (!C.host) { console.log('SMTP non configuré. Lien pour ' + id + ' : ' + link); return 'logged'; }
+    try { await smtp(u.email, 'Budget : réinitialisation de ton mot de passe', text); }
+    catch (e) { console.error('Envoi e-mail impossible :', e.message); return 'error: ' + e.message; }
+    return 'sent';
+  };
   try { secret = fs.readFileSync(F.key, 'utf8'); }
   catch (e) { secret = crypto.randomBytes(32).toString('hex'); fs.writeFileSync(F.key, secret, { mode: 0o600 }); }
 
@@ -168,20 +217,10 @@ function main() {
     });
     if (p === '/api/forgot' && req.method === 'POST') return body(req, b => {
       send(res, 200, { ok: true });               // même réponse dans tous les cas
-      if (forgotLim(ip(req)) || !BASE) { if (!BASE) console.error('BASE_URL non défini : aucun lien envoyé.'); return; }
+      if (forgotLim(ip(req))) return;
       const q = String(b && b.id || '').trim().toLowerCase(), U = users();
       const id = U.users[q] ? q : Object.keys(U.users).find(k => U.users[k].email === q);
-      const u = id && U.users[id]; if (!u || !u.email) return;
-      const R = readJSON(F.resets, {}), now = Date.now();
-      const sent = ((R[id] || {}).sent || []).filter(t => now - t < 36e5);
-      if (sent.length >= 3) return;
-      const sec = crypto.randomBytes(32).toString('base64url');
-      R[id] = { h: crypto.createHash('sha256').update(sec).digest('hex'), exp: now + 18e5, sent: sent.concat(now) };
-      writeJSON(F.resets, R);
-      const link = BASE + '/reset.html#' + id + '.' + sec;
-      const text = 'Bonjour ' + u.name + ',\n\nTu as demandé à changer ton mot de passe du budget. Ouvre ce lien (valable 30 minutes, utilisable une seule fois) :\n\n' + link + '\n\nSi ce n’est pas toi, ignore ce message : ton mot de passe reste inchangé.\n';
-      if (!process.env.SMTP_HOST) return console.log('SMTP non configuré. Lien pour ' + id + ' : ' + link);
-      smtp(u.email, 'Budget : réinitialisation de ton mot de passe', text).catch(e => console.error('Envoi e-mail impossible :', e.message));
+      if (id) issueReset(id, U.users[id]);
     });
     if (p === '/api/reset' && req.method === 'POST') return body(req, b => {
       if (resetLim(ip(req))) return send(res, 429, { error: 'Trop d’essais, réessaie plus tard.' });
@@ -196,7 +235,7 @@ function main() {
       u.salt = crypto.randomBytes(16).toString('hex'); u.hash = hashPw(pw, u.salt); writeJSON(F.users, U);
       R[id] = { h: '', exp: 0, sent: r.sent || [] }; writeJSON(F.resets, R);   // lien à usage unique
       send(res, 200, { ok: true });
-      if (u.email && process.env.SMTP_HOST) smtp(u.email, 'Budget : mot de passe modifié', 'Bonjour ' + u.name + ',\n\nTon mot de passe du budget vient d’être modifié. Si ce n’est pas toi, préviens l’administrateur.\n').catch(() => {});
+      if (u.email && smtpConf().host) smtp(u.email, 'Budget : mot de passe modifié', 'Bonjour ' + u.name + ',\n\nTon mot de passe du budget vient d’être modifié. Si ce n’est pas toi, préviens l’administrateur.\n').catch(() => {});
     });
     if (p === '/api/logout' && req.method === 'POST') {
       res.setHeader('Set-Cookie', 'sid=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
@@ -205,12 +244,104 @@ function main() {
     if (p.startsWith('/api/')) {
       const me = auth(req); if (!me) return send(res, 401, { error: 'auth' });
       migrate();
+      if (p === '/api/settings' && req.method === 'GET') {
+        const U = users(), admin = U.order[0] === me.id, S = readJSON(F.settings, {}), C = smtpConf();
+        return send(res, 200, {
+          me: Object.assign(pub(me.id, U.users[me.id]), { email: U.users[me.id].email || '', admin }),
+          users: U.order.map(i => Object.assign(pub(i, U.users[i]), { admin: i === U.order[0], email: admin ? (U.users[i].email || '') : '' })),
+          smtp: admin ? { host: C.host || '', port: C.port, secure: !!C.secure, user: C.user || '', from: C.from || '', hasPass: !!C.pass, base: C.base, fromEnv: !((S.smtp || {}).host) && !!process.env.SMTP_HOST } : null
+        });
+      }
+      if (p === '/api/profile' && req.method === 'PUT') return body(req, b => {
+        b = b || {}; const U = users(), u = U.users[me.id];
+        const name = String(b.name || '').trim().slice(0, 30); if (name) u.name = name;
+        if (['auto', 'light', 'dark'].includes(b.theme)) u.theme = b.theme;
+        if (b.accent === '') delete u.accent; else if (/^#[0-9a-f]{6}$/i.test(b.accent || '')) u.accent = b.accent;
+        if (typeof b.avatar === 'string') {
+          if (b.avatar === '') delete u.avatar;
+          else if (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(b.avatar) && b.avatar.length < 100000) u.avatar = b.avatar;
+          else return send(res, 400, { error: 'Image invalide ou trop lourde.' });
+        }
+        if (typeof b.email === 'string') {
+          const e = b.email.trim().toLowerCase();
+          if (e !== (u.email || '')) {
+            if (e && !EMAIL.test(e)) return send(res, 400, { error: 'Adresse e-mail invalide.' });
+            if (pwLim(me.id) || !pwOk(u, b.password)) return send(res, 403, { error: 'Mot de passe actuel requis pour changer l’adresse e-mail.' });
+            if (e) u.email = e; else delete u.email;
+          }
+        }
+        writeJSON(F.users, U); send(res, 200, { ok: true });
+      });
+      if (p === '/api/password' && req.method === 'POST') return body(req, b => {
+        b = b || {}; const U = users(), u = U.users[me.id], pw = String(b.password || '');
+        if (pwLim(me.id) || !pwOk(u, b.current)) return send(res, 403, { error: 'Mot de passe actuel incorrect.' });
+        if (pw.length < 8) return send(res, 400, { error: '8 caractères minimum.' });
+        u.salt = crypto.randomBytes(16).toString('hex'); u.hash = hashPw(pw, u.salt); writeJSON(F.users, U);
+        res.setHeader('Set-Cookie', cookie(me.id, u, secure));   // les autres sessions sont déconnectées
+        send(res, 200, { ok: true });
+      });
+      if (p.startsWith('/api/admin/')) {
+        const U = users();
+        if (U.order[0] !== me.id) return send(res, 403, { error: 'Réservé à l’administrateur.' });
+        if (req.method !== 'POST') return send(res, 405, { error: 'method' });
+        return body(req, b => {
+          b = b || {};
+          if (p === '/api/admin/smtp/test') {
+            if (testLim(me.id)) return send(res, 429, { error: 'Trop d’essais.' });
+            const u = U.users[me.id];
+            if (!u.email) return send(res, 200, { ok: false, error: 'Ajoute d’abord ton adresse e-mail dans ton profil.' });
+            return smtp(u.email, 'Budget : e-mail de test', 'Si tu lis ce message, l’envoi d’e-mails fonctionne.\n')
+              .then(() => send(res, 200, { ok: true })).catch(e => send(res, 200, { ok: false, error: e.message }));
+          }
+          if (pwLim(me.id) || !pwOk(U.users[me.id], b.confirm)) return send(res, 403, { error: 'Mot de passe administrateur incorrect.' });
+          if (p === '/api/admin/user') {
+            const id = String(b.id || '').toLowerCase(), pw = String(b.password || '');
+            const name = String(b.name || '').trim().slice(0, 30) || id, em = String(b.email || '').trim().toLowerCase();
+            if (!/^[a-z0-9_-]{1,20}$/.test(id)) return send(res, 400, { error: 'Identifiant : minuscules, chiffres, - ou _ (20 maximum).' });
+            if (U.users[id]) return send(res, 400, { error: 'Cet identifiant existe déjà.' });
+            if (pw.length < 8) return send(res, 400, { error: 'Mot de passe : 8 caractères minimum.' });
+            if (em && !EMAIL.test(em)) return send(res, 400, { error: 'Adresse e-mail invalide.' });
+            const salt = crypto.randomBytes(16).toString('hex');
+            U.users[id] = { name, salt, hash: hashPw(pw, salt) }; if (em) U.users[id].email = em;
+            U.order.push(id); writeJSON(F.users, U); return send(res, 200, { ok: true });
+          }
+          if (p === '/api/admin/delete') {
+            const id = String(b.id || '');
+            if (id === me.id || !U.users[id]) return send(res, 400, { error: 'Suppression impossible.' });
+            delete U.users[id]; U.order = U.order.filter(x => x !== id); writeJSON(F.users, U);
+            delete db.personal[id]; persist();
+            const R = readJSON(F.resets, {}); delete R[id]; writeJSON(F.resets, R);
+            return send(res, 200, { ok: true });
+          }
+          if (p === '/api/admin/resetlink') {
+            const id = String(b.id || ''), u = U.users[id];
+            if (!u) return send(res, 400, { error: 'Profil inconnu.' });
+            return issueReset(id, u).then(status => send(res, 200, { status }));
+          }
+          if (p === '/api/admin/smtp') {
+            const S = readJSON(F.settings, {}), m = S.smtp || {}, host = String(b.host || '').trim();
+            const port = Math.round(+b.port) || 587, base = String(b.base || '').trim().replace(/\/+$/, '');
+            if (base && !/^https?:\/\/[^\s\/]+(\/\S*)?$/.test(base)) return send(res, 400, { error: 'Adresse publique invalide (ex. https://budget.exemple.fr).' });
+            if (host && !/^[A-Za-z0-9.-]+$/.test(host)) return send(res, 400, { error: 'Nom de serveur SMTP invalide.' });
+            if (port < 1 || port > 65535) return send(res, 400, { error: 'Port invalide.' });
+            S.baseUrl = base;
+            if (!host) delete S.smtp;
+            else {
+              const n = { host, port, secure: !!b.secure, user: String(b.user || '').trim(), from: String(b.from || '').trim() };
+              if (typeof b.pass === 'string' && b.pass) n.pass = encPw(b.pass); else if (m.pass) n.pass = m.pass;
+              S.smtp = n;
+            }
+            writeJSON(F.settings, S); return send(res, 200, { ok: true });
+          }
+          send(res, 404, { error: 'not found' });
+        });
+      }
       if (p === '/api/state') {
         const owner = users().order[0] === me.id;
         if (req.method === 'GET') {
           const pe = db.personal[me.id], sh = db.shared;
           return send(res, 200, {
-            rev: db.rev, me: { id: me.id, name: me.name, owner }, shared: sh,
+            rev: db.rev, me: Object.assign(pub(me.id, users().users[me.id]), { owner }), shared: sh,
             state: pe ? Object.assign({}, pe, { ca: sh ? sh.ca : [], cd: sh ? sh.cd : [] }) : null
           });
         }

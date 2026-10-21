@@ -45,14 +45,21 @@ h1{font-size:22px;margin:4px 0 14px}
 .hd span{width:92px;text-align:right}.hd span+span{margin-right:30px}
 .note{color:var(--mu);font-size:13px;margin:0 0 8px}
 .rst{background:none;border:0;color:var(--mu);font:inherit;font-size:13px;text-decoration:underline;margin:6px 0 20px}
+.btn{padding:10px 14px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:inherit;font-weight:600}
+.btn.g{background:var(--in);color:var(--tx);border:1px solid var(--bd)}
+.btn.d{background:var(--bad);color:#fff}
+.u{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;max-width:90%;padding:10px 14px;border-radius:10px;color:#fff;font-size:14px;display:none}
+#toast.ok{background:var(--ok)}#toast.bad{background:var(--bad)}
 </style></head><body><main>
 <h1>Mon budget mensuel</h1>
-<p class="note"><span id="who"></span> · <a href="#" id="out" style="color:var(--ac)">Se déconnecter</a> · <span id="st"></span></p>
+<p class="note"><span id="who"></span> · <a href="#" id="gear" style="color:var(--ac)">Paramètres</a> · <a href="#" id="out" style="color:var(--ac)">Se déconnecter</a> · <span id="st"></span></p>
 <div class="sum" id="sum"></div>
 <div class="tabs" id="tabs"></div>
 <div id="view"></div>
 <button class="rst" id="exp">Exporter une sauvegarde</button> <button class="rst" id="rst">Réinitialiser les données</button>
 </main>
+<div id="toast"></div>
 <script>
 const K='budget-v1';
 const DEF=()=>({income:1825,incomeDay:2,start:0,goals:[],credits:[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}],
@@ -135,6 +142,7 @@ const gl=()=>{let h='<div class="box"><h2>Objectifs d’épargne</h2><p class="n
   return h+`<button class="add" data-add="goals">+ Ajouter un objectif</button><div class="tot"><span>Épargne mensuelle totale</span><span>${f(tm)}</span></div></div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
+  $('#sum').style.display=tab=='set'?'none':'';
   const fx=sum(S.fixes),vp=sum(S.vars,1),vr=sum(S.vars,2);
   const rp=S.income-fx-vp,rr=S.income-fx-vr;
   $('#sum').innerHTML=`<div class="k"><small>Revenu mensuel</small><input type="number" step="1" inputmode="decimal" data-n data-p="income" value="${S.income}" aria-label="Revenu mensuel"></div>
@@ -171,7 +179,7 @@ function render(){
   }
   if(tab=='cre')h=crd();
   if(tab=='epa')h=gl();
-  $('#view').innerHTML=h;
+  if(tab!=='set')$('#view').innerHTML=h;
 }
 function setP(p,v){const a=p.split('.');let o=S;for(let i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
@@ -216,6 +224,85 @@ document.addEventListener('pointerup',()=>{if(!dg)return;
   if(d.to&&d.to!==d.from){showEnd.clear();const[k,a]=d.from.split('.'),b=+d.to.split('.')[1];const[x]=S[k].splice(+a,1);S[k].splice(b,0,x);save()}
   render()});
 document.addEventListener('pointercancel',()=>{dg=null;render()});
+/* ---------- Paramètres ---------- */
+let prefs={theme:'auto',accent:''},cfg=null;
+const SW=['#2547d0','#0e7c5a','#6d3fc7','#c2331f','#b45309','#be185d','#475467'];
+const mix=(h,t)=>{const n=parseInt(h.slice(1),16);return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(v+(255-v)*t).toString(16).padStart(2,'0')).join('')};
+const dark=()=>prefs.theme==='dark'||(prefs.theme!=='light'&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
+function applyPrefs(){const r=document.documentElement;
+  if(prefs.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',prefs.theme);
+  if(prefs.accent)r.style.setProperty('--ac',dark()?mix(prefs.accent,.4):prefs.accent);else r.style.removeProperty('--ac')}
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyPrefs);
+const av=(u,z)=>u.avatar?`<img src="${u.avatar}" alt="" style="width:${z}px;height:${z}px;border-radius:50%;object-fit:cover;display:block">`:`<span style="width:${z}px;height:${z}px;border-radius:50%;background:var(--ac);color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:${Math.round(z*.45)}px">${esc(((u.name||'?')[0]||'?').toUpperCase())}</span>`;
+const hdr=()=>{$('#who').innerHTML=`<span style="display:inline-flex;align-items:center;gap:8px;vertical-align:middle">${av(me,28)}<b>${esc(me.name)}</b></span>`};
+const toast=(t,ok)=>{const e=$('#toast');e.textContent=t;e.className=ok?'ok':'bad';e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>{e.style.display='none'},3500)};
+const val=id=>{const e=document.getElementById(id);return e?e.value:''};
+const api=async(m,u,b)=>{const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
+  if(r.status===401){location.href='login.html';return{ok:false,j:{}}}
+  return{ok:r.ok,j:await r.json().catch(()=>({}))}};
+const resize=file=>new Promise((ok,ko)=>{const im=new Image(),u=URL.createObjectURL(file);
+  im.onload=()=>{const s=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=160;
+    c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,160,160);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.82))};
+  im.onerror=()=>ko();im.src=u});
+async function profile(b){const r=await api('PUT','api/profile',b);
+  if(!r.ok){toast(r.j.error||'Échec.');return false}
+  if(b.name)me.name=b.name.trim();if('avatar' in b)me.avatar=b.avatar;
+  hdr();const y=window.scrollY;await openSettings();window.scrollTo(0,y);toast('Enregistré.',1);return true}
+const setHTML=()=>{
+  const u=cfg.me,adm=u.admin,m=cfg.smtp;
+  const box=(t,b)=>`<div class="box"><h2>${t}</h2>${b}</div>`;
+  const inp=(id,l,v,t,ex)=>`<label>${l}<input id="${id}" type="${t||'text'}" value="${esc(v==null?'':v)}" ${ex||''}></label>`;
+  const mini='style="padding:6px 10px;font-size:13px"';
+  let h=box('Profil',`<div class="u" style="margin-bottom:10px">${av(u,56)}<button class="btn g" data-a="photo">Choisir une photo</button>${u.avatar?'<button class="btn g" data-a="nophoto">Retirer</button>':''}<input type="file" id="pf" accept="image/*" hidden></div>
+    <div class="fg">${inp('pn','Nom affiché',u.name)}${inp('pe','E-mail (récupération du mot de passe)',u.email,'email','autocomplete="email"')}</div>
+    <div class="fg">${inp('ppw','Mot de passe actuel (seulement pour changer l’e-mail)','','password','autocomplete="current-password"')}</div>
+    <button class="btn" data-a="saveprof">Enregistrer le profil</button>`);
+  h+=box('Apparence',`<p class="note">Thème</p><div class="tabs" style="margin-bottom:12px">${[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(t=>`<button data-a="theme" data-v="${t[0]}" class="${(u.theme||'auto')==t[0]?'on':''}">${t[1]}</button>`).join('')}</div>
+    <p class="note">Couleur principale</p><div class="u">${SW.map(c=>`<button data-a="accent" data-v="${c}" aria-label="Couleur ${c}" style="width:34px;height:34px;border-radius:50%;border:3px solid ${u.accent===c?'var(--tx)':'transparent'};background:${c}"></button>`).join('')}<button class="btn g" data-a="accent" data-v="" ${mini}>Par défaut</button></div>`);
+  h+=box('Sécurité',`<div class="fg">${inp('cp','Mot de passe actuel','','password','autocomplete="current-password"')}${inp('np','Nouveau mot de passe (8 min.)','','password','autocomplete="new-password"')}</div><button class="btn" data-a="savepw">Changer le mot de passe</button>`);
+  h+=box('Données',`<p class="note">Sauvegarde ou restaure tes données personnelles. Le compte commun n’est pas touché par l’import.</p><div class="u"><button class="btn g" data-a="export">Exporter</button><button class="btn g" data-a="import">Importer un fichier…</button><input type="file" id="imp" accept="application/json,.json" hidden></div>`);
+  if(adm){
+    h+=box('Administration',`<p class="note">Ton mot de passe est demandé pour ajouter ou supprimer un profil, envoyer un lien ou modifier l’e-mail du serveur.</p><div class="fg">${inp('ac','Ton mot de passe','','password','autocomplete="current-password"')}</div>`);
+    h+=box('Utilisateurs',cfg.users.map(x=>`<div class="u"><span>${av(x,34)}</span><span style="flex:1;min-width:120px"><b>${esc(x.name)}</b>${x.admin?' · admin':''}<br><small style="color:var(--mu)">${esc(x.id)}${x.email?' · '+esc(x.email):' · pas d’e-mail'}</small></span>${x.id===u.id?'':`<button class="btn g" data-a="resetlink" data-v="${esc(x.id)}" ${mini}>Lien mot de passe</button><button class="btn d" data-a="deluser" data-v="${esc(x.id)}" ${mini}>Supprimer</button>`}</div>`).join('')+
+      `<p class="note" style="margin-top:14px">Ajouter un utilisateur</p><div class="fg">${inp('ni','Identifiant (minuscules)','','text','autocapitalize="none" autocomplete="off"')}${inp('nn','Nom affiché','')}${inp('ne','E-mail (facultatif)','','email','autocomplete="off"')}${inp('nw','Mot de passe (8 min.)','','password','autocomplete="new-password"')}</div><button class="btn" data-a="adduser">Ajouter</button>`);
+    h+=box('E-mail (mot de passe oublié)',`<p class="note">Sert à envoyer les liens de réinitialisation.${m.fromEnv?' Les valeurs affichées viennent pour l’instant du fichier de configuration du serveur.':''}</p>
+      <div class="fg">${inp('sh','Serveur SMTP',m.host)}${inp('sp','Port',m.port,'number','inputmode="numeric"')}${inp('su','Identifiant SMTP',m.user,'text','autocomplete="off"')}${inp('sw','Mot de passe SMTP','','password','autocomplete="new-password" placeholder="'+(m.hasPass?'enregistré (vide = inchangé)':'')+'"')}${inp('sf','Expéditeur',m.from,'text','placeholder="Budget &lt;budget@exemple.fr&gt;"')}${inp('sb','Adresse publique de l’appli',m.base,'url','placeholder="https://budget.exemple.fr"')}</div>
+      <label style="display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:14px;color:var(--mu)"><input id="ss" type="checkbox" ${m.secure?'checked':''} style="width:auto;margin:0"> TLS direct (port 465). Sinon STARTTLS (port 587).</label>
+      <div class="u"><button class="btn" data-a="savesmtp">Enregistrer</button><button class="btn g" data-a="testsmtp">Envoyer un e-mail de test</button></div>`);
+  }
+  return h};
+async function openSettings(){tab='set';render();
+  try{const r=await fetch('api/settings');if(r.status===401){location.href='login.html';return}cfg=await r.json()}
+  catch(e){$('#view').innerHTML='<p class="note">Impossible de charger les paramètres.</p>';return}
+  $('#view').innerHTML=setHTML()}
+async function act(a,v){
+  if(a==='photo')return $('#pf').click();
+  if(a==='nophoto')return profile({avatar:''});
+  if(a==='saveprof')return profile({name:val('pn'),email:val('pe'),password:val('ppw')});
+  if(a==='theme'){prefs.theme=v;applyPrefs();return profile({theme:v})}
+  if(a==='accent'){prefs.accent=v;applyPrefs();return profile({accent:v})}
+  if(a==='savepw'){const r=await api('POST','api/password',{current:val('cp'),password:val('np')});
+    if(r.ok){toast('Mot de passe modifié.',1);openSettings()}else toast(r.j.error||'Échec.');return}
+  if(a==='export')return $('#exp').click();
+  if(a==='import')return $('#imp').click();
+  const ac=val('ac'),done=(r,t)=>{if(r.ok){toast(t,1);openSettings()}else toast(r.j.error||'Échec.')};
+  if(a==='adduser')return done(await api('POST','api/admin/user',{id:val('ni'),name:val('nn'),email:val('ne'),password:val('nw'),confirm:ac}),'Utilisateur ajouté.');
+  if(a==='deluser'){if(!confirm('Supprimer ce profil et ses données personnelles ? Le compte commun est conservé.'))return;
+    return done(await api('POST','api/admin/delete',{id:v,confirm:ac}),'Profil supprimé.')}
+  if(a==='resetlink'){const r=await api('POST','api/admin/resetlink',{id:v,confirm:ac});if(!r.ok)return toast(r.j.error||'Échec.');
+    const M={sent:'Lien envoyé par e-mail.','no-email':'Ce profil n’a pas d’adresse e-mail.','no-base':'Renseigne d’abord l’adresse publique de l’appli.',limited:'Déjà 3 demandes cette heure pour ce profil.',logged:'SMTP non configuré : lien écrit dans le journal du serveur.'};
+    return toast(M[r.j.status]||('Échec : '+r.j.status),r.j.status==='sent')}
+  if(a==='savesmtp')return done(await api('POST','api/admin/smtp',{host:val('sh'),port:val('sp'),user:val('su'),pass:val('sw'),from:val('sf'),base:val('sb'),secure:$('#ss').checked,confirm:ac}),'Réglages e-mail enregistrés.');
+  if(a==='testsmtp'){toast('Envoi en cours…',1);const r=await api('POST','api/admin/smtp/test',{});
+    toast(r.j.ok?'E-mail de test envoyé à ton adresse.':('Échec : '+(r.j.error||'inconnu')),r.j.ok)}
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.id==='pf'&&t.files[0]){try{await profile({avatar:await resize(t.files[0])})}catch(x){toast('Image illisible.')}}
+  if(t.id==='imp'&&t.files[0]){try{const j=JSON.parse(await t.files[0].text());if(!Array.isArray(j.fixes)||!Array.isArray(j.vars))throw 0;
+    if(!confirm('Remplacer tes données actuelles par ce fichier ?'))return;
+    const ca=S.ca,cd=S.cd;S=j;S.ca=ca;S.cd=cd;mig();save();toast('Données importées.',1)}catch(x){toast('Fichier non reconnu.')}t.value=''}});
+$('#gear').onclick=e=>{e.preventDefault();openSettings()};
 $('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
 $('#exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='budget-sauvegarde.json';a.click()};
 $('#rst').onclick=()=>{if(confirm('Remettre tes données par défaut ? (le compte commun est conservé)')){const ca=S.ca,cd=S.cd;S=me&&me.owner?DEF():BLANK(S);S.ca=ca;S.cd=cd;save();render()}};
@@ -225,7 +312,7 @@ render();
     const r=await fetch('api/state');
     if(r.status===401){location.href='login.html';return}
     if(!r.ok)throw 0;const j=await r.json();
-    me=j.me;$('#who').textContent='Connecté : '+me.name;
+    me=j.me;prefs={theme:me.theme||'auto',accent:me.accent||''};applyPrefs();hdr();
     if(!j.state){S=me.owner?DEF():BLANK(j.shared);ready=true;save();render();return}
     if(!ready||j.rev!==rev){rev=j.rev;S=j.state;const was=mig();const first=!ready;ready=true;if(was)save();
       const a=document.activeElement;if(first||!(a&&a.tagName==='INPUT'))render()}

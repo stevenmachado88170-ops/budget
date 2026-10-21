@@ -25,12 +25,12 @@ systemctl daemon-reload && systemctl enable --now budget
 Le **premier** profil créé récupère les données déjà présentes (ancien format).
 Crée donc le tien en premier :
 ```
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser User User User@exemple.fr
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser User User User@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser steven Steven steven@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser marie Marie marie@exemple.fr
 ```
 L'adresse e-mail (3e argument) sert à la récupération du mot de passe. Pour l'ajouter ou la changer plus tard :
 ```
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js setemail User User@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js setemail marie marie@exemple.fr
 ```
 Le mot de passe est demandé deux fois (8 caractères minimum).
 Mot de passe oublié : relance la même commande avec `passwd` à la place de `adduser`.
@@ -51,7 +51,12 @@ Sur la page de connexion, « Mot de passe oublié ? » envoie un lien par e-mail
 - Réponse identique que le profil existe ou non (on ne révèle rien), 3 e-mails par heure au maximum par profil.
 - Après un changement, toutes les sessions ouvertes sont déconnectées et un e-mail de confirmation est envoyé.
 
-Configuration (adresse SMTP de ton fournisseur, ou un compte dédié) :
+**Le plus simple : depuis l'appli.** Connecté avec le profil administrateur (le premier créé),
+ouvre **Paramètres → E-mail** : serveur, port, identifiant, mot de passe, expéditeur et adresse
+publique, puis « Envoyer un e-mail de test ». Le mot de passe SMTP est chiffré dans
+`/var/lib/budget/settings.json`. Ces réglages priment sur le fichier ci-dessous.
+
+Autre possibilité, par fichier de configuration (adresse SMTP de ton fournisseur, ou un compte dédié) :
 ```
 cp /opt/budget/budget.env.example /etc/budget.env
 nano /etc/budget.env          # BASE_URL, SMTP_HOST, SMTP_USER, SMTP_PASS…
@@ -62,7 +67,16 @@ systemctl restart budget
 Port 465 = TLS direct, port 587 = STARTTLS (le port 25 sans chiffrement n'est pas géré).
 Sans SMTP configuré, le lien est simplement écrit dans le journal (`journalctl -u budget`) pour l'administrateur.
 
-## 6. Mises à jour
+## 6. Paramètres dans l'appli
+Lien **Paramètres** en haut de la page :
+- **Profil** : photo (recadrée et réduite automatiquement), nom, e-mail (le mot de passe est demandé pour le changer).
+- **Apparence** : thème auto / clair / sombre et couleur principale, propres à chaque profil.
+- **Sécurité** : changer son mot de passe (les autres sessions sont déconnectées).
+- **Données** : exporter / importer ses données personnelles.
+- **Administrateur** (premier profil créé) : ajouter ou supprimer un utilisateur, envoyer un lien de
+  réinitialisation à un profil, régler l'e-mail du serveur. Ces actions demandent son mot de passe.
+
+## 7. Mises à jour
 `/opt/budget/update.sh`
 
 ## Sauvegarde
