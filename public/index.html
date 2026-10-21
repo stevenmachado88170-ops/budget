@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mon budget</title>
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--tx:#101828;--mu:#667085;--ac:#2547d0;--ok:#0e7c5a;--bad:#c2331f;--bd:#e0e4ea;--in:#f7f8fa;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--tx:#eef1f5;--mu:#98a2b3;--ac:#7f9bff;--ok:#4cc79c;--bad:#ff8a78;--bd:#2a3441;--in:#111820;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--tx:#eef1f5;--mu:#98a2b3;--ac:#7f9bff;--ok:#4cc79c;--bad:#ff8a78;--bd:#2a3441;--in:#111820;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 "Avenir Next",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 14px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.k small{display:block;color:var(--mu);font-size:13px}
+.k b{font-size:20px}
+.k input{width:100%;border:0;background:transparent;color:var(--tx);font:inherit;font-size:20px;font-weight:700;padding:0}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{flex:1 1 28%;padding:10px 4px;border:1px solid var(--bd);background:var(--card);color:var(--mu);border-radius:10px;font:inherit;font-weight:600}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+.box h2{font-size:16px;margin:0 0 8px}
+.r{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.r input{min-width:0;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--in);color:var(--tx);font:inherit}
+.r input:not([type=number]):not([type=month]){flex:1}
+.g{cursor:grab;touch-action:none;user-select:none;color:var(--mu);padding:0 6px 0 0;font-size:18px;line-height:1}
+.r.over{outline:2px solid var(--ac);border-radius:8px}.r.drag{opacity:.5}
+.r input[type=number]{width:92px;text-align:right}
+.r{flex-wrap:wrap}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}
+.fg label{font-size:13px;color:var(--mu);display:flex;flex-direction:column;gap:3px}
+.fg input{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--in);color:var(--tx);font:inherit}
+.sub{flex-basis:100%;display:flex;gap:14px;flex-wrap:wrap;color:var(--mu);font-size:13px;padding-left:24px}
+.sub label{display:flex;align-items:center;gap:6px}
+.sub input{width:64px!important;padding:6px!important}
+.sub input[type=month]{width:150px!important}
+.r button,.add{border:0;background:transparent;color:var(--mu);font:inherit}
+.r button{font-size:20px;padding:0 6px}
+.add{color:var(--ac);font-weight:600;padding:6px 0}
+.tot{display:flex;justify-content:space-between;border-top:1px solid var(--bd);padding-top:8px;margin-top:6px;font-weight:700}
+.bar{height:6px;border-radius:3px;background:var(--bd);margin:0 0 10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}.bar i.over{background:var(--bad)}
+.hd{display:flex;justify-content:flex-end;gap:6px;color:var(--mu);font-size:13px;margin-bottom:4px}
+.hd span{width:92px;text-align:right}.hd span+span{margin-right:30px}
+.note{color:var(--mu);font-size:13px;margin:0 0 8px}
+.rst{background:none;border:0;color:var(--mu);font:inherit;font-size:13px;text-decoration:underline;margin:6px 0 20px}
+</style></head><body><main>
+<h1>Mon budget mensuel</h1>
+<p class="note"><span id="who"></span> · <a href="#" id="out" style="color:var(--ac)">Se déconnecter</a> · <span id="st"></span></p>
+<div class="sum" id="sum"></div>
+<div class="tabs" id="tabs"></div>
+<div id="view"></div>
+<button class="rst" id="exp">Exporter une sauvegarde</button> <button class="rst" id="rst">Réinitialiser les données</button>
+</main>
+<script>
+const K='budget-v1';
+const DEF=()=>({income:1825,incomeDay:2,start:0,goals:[],credits:[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}],
+fixes:[["Compte joint",810,"",2],["Essence",220,"",2],["Hyundai (crédit)",334.33,"",6],["Assurance auto",59.16,"",5],["Téléphone",12.99,"",5],["Abonnements",30,"",18],["Impôt",142,"2026-12",25]],
+vars:[["Courses",300,0],["Restos / fast-food",40,0],["Shopping / loisirs",70,0]],
+ca:[["Steven",810],["Marie",0]],cd:[]});
+let S=DEF(),me=null,ready=false;
+const DAYS={"Compte joint":2,"Essence":2,"Hyundai (crédit)":6,"Assurance auto":5,"Téléphone":5,"Abonnements":18,"Impôt":25};
+const mig=()=>{let c=false;S.fixes.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]=DAYS[x[0]]||'';c=true}});
+  if(S.incomeDay===undefined){S.incomeDay=2;c=true}
+  if(!S.credits){S.credits=[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}];c=true}
+  if(!S.goals){S.goals=[];c=true}return c};
+mig();
+let rev=0;
+const BLANK=sh=>({income:0,incomeDay:2,start:0,goals:[],credits:[],fixes:[],vars:[["Courses",0,0],["Restos / fast-food",0,0],["Shopping / loisirs",0,0]],ca:(sh&&sh.ca)||[],cd:(sh&&sh.cd)||[]});
+const st=t=>{const el=document.getElementById('st');if(el)el.textContent=t};
+const save=()=>{
+  fetch('api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)})
+    .then(r=>{if(r.status===401){location.href='login.html';throw 0}if(!r.ok)throw 0;return r.json()}).then(j=>{rev=j.rev;st('Synchronisé')})
+    .catch(()=>st('Hors ligne : la dernière modification n’est peut-être pas enregistrée'))};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const f=n=>n.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+const sum=(a,i=1)=>a.reduce((t,x)=>t+(+x[i]||0),0);
+const cl=n=>n>=0?'pos':'neg';
+let tab='fixes';
+const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne']];
+
+const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${k=='fixes'?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="fixes.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label>jusqu’à <input type="month" data-p="fixes.${i}.2" value="${S[k][i][2]||''}" aria-label="Jusqu’à (vide = sans fin)"></label></div>`:''}</div>`;
+const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}<button class="add" data-add="${k}">+ Ajouter une ligne</button><div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div></div>`;
+
+const cal=()=>{
+  const ev=[[+S.incomeDay||1,'Salaire',+S.income||0]];
+  S.fixes.forEach(x=>{if(+x[3]&&(+x[1]||0))ev.push([+x[3],x[0]||'—',-(+x[1]||0)])});
+  ev.sort((a,b)=>a[0]-b[0]);
+  const nod=S.fixes.filter(x=>!+x[3]).length;let bal=+S.start||0;
+  let h=`<div class="box"><h2>Calendrier du mois</h2><p class="note">Solde après chaque mouvement fixe. Les dépenses variables ne sont pas incluses.</p>
+  <div class="r" style="margin:0 0 6px"><span style="flex:1">Jour du salaire</span><input type="number" min="1" max="31" inputmode="numeric" data-n data-p="incomeDay" value="${S.incomeDay||''}"></div>
+  <div class="r" style="margin:0 0 10px"><span style="flex:1">Solde au 1er du mois</span><input type="number" step="0.01" inputmode="decimal" data-n data-p="start" value="${S.start||0}"></div>`;
+  ev.forEach(e=>{bal+=e[2];h+=`<div class="tot" style="border:0;margin:0 0 6px;padding:0;font-weight:400"><span>${e[0]} · ${esc(e[1])}</span><span><span class="${e[2]<0?'neg':'pos'}">${f(e[2])}</span> <small style="color:var(--mu)">→ <span class="${cl(bal)}">${f(bal)}</span></small></span></div>`});
+  if(nod)h+=`<p class="note">${nod} ligne(s) sans jour ne figurent pas dans le calendrier.</p>`;
+  return h+'</div>'};
+const fld=(l,p,v,n,st)=>`<label>${l}<input ${n?'type="number" step="'+(st||'0.01')+'" inputmode="decimal" data-n ':'type="month" '}data-p="${p}" value="${v}"></label>`;
+const sim=(bal,p,r,max)=>{let k=0,it=0;while(bal>0.005&&k<max){const i=bal*r;if(p<=i+1e-9)return{k:max,it:0};it+=i;bal-=Math.min(bal,p-i);k++}return{k,it}};
+const dt=(y,m)=>new Date(y,m,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+const crd=()=>{let h='';
+  S.credits.forEach((x,i)=>{
+    const cap=+x.cap||0,n=Math.round(+x.dur||0),r=(+x.rate||0)/1200,ins=+x.ins||0,ex=+x.ex||0;
+    const cp=cap&&n?(r?cap*r/(1-Math.pow(1+r,-n)):cap/n):0,p=+x.pay>0?+x.pay:cp;
+    let out='<p class="note">Renseigne le capital, la durée et le taux pour voir le détail.</p>';
+    if(cap&&n&&p){
+      const sp=(x.start||'').split('-').map(Number),sy=sp[0],sm=sp[1],now=new Date();
+      const e=sy?Math.max(0,Math.min(n,(now.getFullYear()-sy)*12+now.getMonth()+1-sm)):0;
+      let bal=cap,tot=0,paid=0,bn=cap;
+      for(let k=1;k<=n&&bal>0.005;k++){const it=bal*r;bal-=Math.min(bal,p-it);tot+=it;if(k<=e){paid+=it;bn=bal}}
+      const left=tot-paid,rem=n-e,L=(a,b)=>`<div class="tot" style="border:0;margin:0 0 4px;padding:0;font-weight:400"><span>${a}</span><span>${b}</span></div>`;
+      out=`<div class="bar"><i style="width:${Math.min(100,e/n*100)}%"></i></div>`+
+        L('Mensualité'+(ins?' (assurance incluse)':''),f(p+ins))+
+        (+x.pay>0&&cp&&Math.abs(cp-p)>0.5?L('Mensualité calculée (sans assurance)',f(cp)):'')+
+        L('Intérêts sur la durée',f(tot))+L('Coût des intérêts + assurance',f(tot+ins*n))+
+        L('Échéances payées / restantes',e+' / '+rem)+L('Capital restant dû (estimé)',f(bn))+L('Intérêts restants',f(left))+
+        (sy?L('Dernière échéance',dt(sy,sm+n-2)):'');
+      if(ex>0&&rem>0){const s2=sim(Math.max(0,bn-ex),p,r,600);
+        out+=`<p class="note" style="margin:8px 0 0">Remboursement anticipé de ${f(ex)} : ${s2.k>=600?'mensualité trop faible pour solder le reste':'tu économises '+f(Math.max(0,left-s2.it))+' d’intérêts et '+Math.max(0,rem-s2.k)+' mois'}.</p>`}
+    }
+    h+=`<div class="box"><div class="r"><input data-p="credits.${i}.n" value="${esc(x.n)}" placeholder="Nom du crédit"><button data-del="credits.${i}" aria-label="Supprimer">×</button></div><div class="fg">`+
+      fld('Capital emprunté (€)',`credits.${i}.cap`,x.cap,1)+fld('Taux annuel (%)',`credits.${i}.rate`,x.rate,1,'0.001')+
+      fld('Durée (mois)',`credits.${i}.dur`,x.dur,1,'1')+fld('1re mensualité',`credits.${i}.start`,x.start||'',0)+
+      fld('Assurance (€/mois)',`credits.${i}.ins`,x.ins,1)+fld('Mensualité imposée (0 = calculée)',`credits.${i}.pay`,x.pay,1)+
+      fld('Remboursement anticipé (€)',`credits.${i}.ex`,x.ex,1)+`</div>`+out+`</div>`});
+  return h+'<button class="add" data-add="credits">+ Ajouter un crédit</button><p class="note">Estimations indicatives : ton tableau d’amortissement fait foi.</p>'};
+const gl=()=>{let h='<div class="box"><h2>Objectifs d’épargne</h2><p class="note">Un objectif, ce que tu as déjà et ce que tu mets de côté chaque mois.</p>',tm=0;
+  S.goals.forEach((g,i)=>{const t=+g.target||0,s=+g.saved||0,m=+g.month||0,left=Math.max(0,t-s);tm+=m;
+    const mo=left===0?0:(m>0?Math.ceil(left/m):null),d=new Date();
+    const end=mo?dt(d.getFullYear(),d.getMonth()+mo):'';
+    h+=`<div style="border-top:1px solid var(--bd);padding-top:8px;margin-top:8px"><div class="r"><input data-p="goals.${i}.n" value="${esc(g.n)}" placeholder="Objectif"><button data-del="goals.${i}" aria-label="Supprimer">×</button></div><div class="fg">`+
+      fld('Objectif (€)',`goals.${i}.target`,g.target,1)+fld('Déjà épargné (€)',`goals.${i}.saved`,g.saved,1)+fld('Mis de côté / mois (€)',`goals.${i}.month`,g.month,1)+
+      `</div><div class="bar"><i style="width:${t?Math.min(100,s/t*100):0}%"></i></div><p class="note" style="margin:0">${t&&!left?'Objectif atteint.':(mo===null?'Indique un montant mensuel pour estimer la date.':'Reste '+f(left)+' · '+mo+' mois · vers '+end)}</p></div>`});
+  return h+`<button class="add" data-add="goals">+ Ajouter un objectif</button><div class="tot"><span>Épargne mensuelle totale</span><span>${f(tm)}</span></div></div>`};
+function render(){
+  if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
+  const fx=sum(S.fixes),vp=sum(S.vars,1),vr=sum(S.vars,2);
+  const rp=S.income-fx-vp,rr=S.income-fx-vr;
+  $('#sum').innerHTML=`<div class="k"><small>Revenu mensuel</small><input type="number" step="1" inputmode="decimal" data-n data-p="income" value="${S.income}" aria-label="Revenu mensuel"></div>
+  <div class="k"><small>Charges fixes</small><b>${f(fx)}</b></div>
+  <div class="k"><small>Reste prévu</small><b class="${cl(rp)}">${f(rp)}</b></div>
+  <div class="k"><small>Reste réel</small><b class="${cl(rr)}">${f(rr)}</b></div>`;
+  $('#tabs').innerHTML=TABS.map(t=>`<button data-tab="${t[0]}" class="${tab==t[0]?'on':''}">${t[1]}</button>`).join('');
+  let h='';
+  if(tab=='fixes')h=list('fixes','Charges fixes','Ce qui part chaque mois, quoi qu’il arrive.')+cal();
+  if(tab=='prev'){
+    h=`<div class="box"><h2>Budgets variables</h2><p class="note">Fixe un plafond, puis saisis ce que tu as déjà dépensé ce mois-ci.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>`;
+    S.vars.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
+      h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.1" value="${v[1]}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.2" value="${v[2]}"><button data-del="vars.${i}" aria-label="Supprimer">×</button></div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+    h+=`<button class="add" data-add="vars">+ Ajouter un poste</button><div class="tot"><span>Prévu / réel</span><span>${f(vp)} / ${f(vr)}</span></div></div>
+    <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div><div class="box"><h2>Bilan du mois</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Revenu − fixes − variables prévus</span><span class="${cl(rp)}">${f(rp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Avec les dépenses réelles</span><span class="${cl(rr)}">${f(rr)}</span></div></div>`;
+  }
+  if(tab=='com'){
+    const a=sum(S.ca),d=sum(S.cd),s=a-d;
+    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+list('cd','Dépenses communes','Loyer, énergie, courses communes… Partagé entre vos deux profils.')+
+    `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses</span><span class="${cl(s)}">${f(s)}</span></div>`+
+    (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
+  }
+  if(tab=='proj'){
+    const d=new Date();let y=d.getFullYear(),m=d.getMonth(),cum=0;
+    h='<div class="box"><h2>6 prochains mois</h2><p class="note">Revenu − fixes encore actives − variables prévus. Une date de fin sur une ligne fixe (ex. l’impôt) la retire des mois suivants.</p>';
+    for(let n=0;n<6;n++){
+      const key=y+'-'+String(m+1).padStart(2,'0');
+      const f2=S.fixes.reduce((t,x)=>t+(!x[2]||key<=x[2]?(+x[1]||0):0),0);
+      const r=S.income-f2-vp;cum+=r;
+      h+=`<div class="tot" style="border:0;margin:0 0 6px;padding:0;font-weight:400"><span>${new Date(y,m,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}<small style="color:var(--mu)"> · fixes ${f(f2)}</small></span><span class="${cl(r)}">${f(r)}</span></div>`;
+      m++;if(m>11){m=0;y++}
+    }
+    h+=`<div class="tot"><span>Cumul sur 6 mois</span><span class="${cl(cum)}">${f(cum)}</span></div></div>`;
+  }
+  if(tab=='cre')h=crd();
+  if(tab=='epa')h=gl();
+  $('#view').innerHTML=h;
+}
+function setP(p,v){const a=p.split('.');let o=S;for(let i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
+  setP(t.dataset.p,t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value);save();render()});
+document.addEventListener('click',e=>{const t=e.target;
+  if(t.dataset.tab){tab=t.dataset.tab;render()}
+  else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:["",0]);save();render()}
+  else if(t.dataset.del){const[k,i]=t.dataset.del.split('.');S[k].splice(+i,1);save();render()}});
+document.addEventListener('change',e=>{if(e.target.id!=='csv')return;
+  const fl=e.target.files[0];if(!fl)return;
+  fl.text().then(txt=>{
+    const d=new Date(),mm=String(d.getMonth()+1).padStart(2,'0'),ym=d.getFullYear()+'-'+mm,ym2=mm+'/'+d.getFullYear();
+    const g={courses:0,restos:0,autres:0};let n=0;
+    txt.split(/\r?\n/).forEach(l=>{
+      const c=l.split(';'),dt=(c[0]||'').replace(/"/g,'');
+      if(!(dt.startsWith(ym)||dt.endsWith(ym2)))return;
+      const am=c.map(x=>x.replace(/["\s]/g,'')).find(x=>/^-?\d+,\d{1,2}$/.test(x));
+      if(!am)return;const v=parseFloat(am.replace(',','.'));if(v>=0)return;
+      const L=l.toUpperCase();if(/VIR |VIREMENT|PRLV/.test(L))return;
+      const a=-v;
+      if(/CARREFOUR|CRF|LIDL|ALDI|INTERMARCHE|LECLERC|AUCHAN/.test(L))g.courses+=a;
+      else if(/TOTAL|AVIA|ARAL|ESSO|APRR|EASYPARK/.test(L))return;
+      else if(/DONALD|BUFFALO|UBER|RESTAURANT|BURGER/.test(L))g.restos+=a;
+      else g.autres+=a;
+      n++});
+    const set=(re,v)=>{const x=S.vars.find(z=>re.test(z[0]));if(x)x[2]=Math.round(v*100)/100};
+    set(/course/i,g.courses);set(/resto|fast/i,g.restos);set(/shop|loisir/i,g.autres);
+    save();render();alert(n+' dépenses lues pour ce mois. Vérifie les montants.');
+  })});
+let dg=null;
+document.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-g]');if(!g)return;
+  const r=g.closest('.r');dg={r,from:r.dataset.row,to:null};r.classList.add('drag');e.preventDefault();
+  try{g.setPointerCapture(e.pointerId)}catch(x){}});
+document.addEventListener('pointermove',e=>{if(!dg)return;
+  document.querySelectorAll('.r.over').forEach(x=>x.classList.remove('over'));
+  const t=document.elementFromPoint(e.clientX,e.clientY),r=t&&t.closest('.r[data-row]');
+  dg.to=null;if(r&&r.dataset.row.split('.')[0]===dg.from.split('.')[0]){r.classList.add('over');dg.to=r.dataset.row}});
+document.addEventListener('pointerup',()=>{if(!dg)return;
+  const d=dg;dg=null;
+  if(d.to&&d.to!==d.from){const[k,a]=d.from.split('.'),b=+d.to.split('.')[1];const[x]=S[k].splice(+a,1);S[k].splice(b,0,x);save()}
+  render()});
+document.addEventListener('pointercancel',()=>{dg=null;render()});
+$('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
+$('#exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='budget-sauvegarde.json';a.click()};
+$('#rst').onclick=()=>{if(confirm('Remettre tes données par défaut ? (le compte commun est conservé)')){const ca=S.ca,cd=S.cd;S=me&&me.owner?DEF():BLANK(S);S.ca=ca;S.cd=cd;save();render()}};
+render();
+(async()=>{
+  const pull=async()=>{try{
+    const r=await fetch('api/state');
+    if(r.status===401){location.href='login.html';return}
+    if(!r.ok)throw 0;const j=await r.json();
+    me=j.me;$('#who').textContent='Connecté : '+me.name;
+    if(!j.state){S=me.owner?DEF():BLANK(j.shared);ready=true;save();render();return}
+    if(!ready||j.rev!==rev){rev=j.rev;S=j.state;const was=mig();const first=!ready;ready=true;if(was)save();
+      const a=document.activeElement;if(first||!(a&&a.tagName==='INPUT'))render()}
+    st('Synchronisé')
+  }catch(e){st('Hors ligne : nouvel essai en cours…')}};
+  await pull();setInterval(pull,5000);
+})();
+</script></body></html>

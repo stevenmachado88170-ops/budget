@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Nouveau mot de passe · Budget</title>
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--tx:#101828;--mu:#667085;--ac:#2547d0;--bad:#c2331f;--ok:#0e7c5a;--bd:#e0e4ea;--in:#f7f8fa;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--tx:#eef1f5;--mu:#98a2b3;--ac:#7f9bff;--bad:#ff8a78;--ok:#4cc79c;--bd:#2a3441;--in:#111820;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--tx:#eef1f5;--mu:#98a2b3;--ac:#7f9bff;--bad:#ff8a78;--ok:#4cc79c;--bd:#2a3441;--in:#111820;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--tx);font:16px/1.4 "Avenir Next",system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
+main{width:100%;max-width:360px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px}
+h1{font-size:22px;margin:0 0 4px}p{color:var(--mu);margin:0 0 16px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:12px}
+input{display:block;width:100%;margin-top:4px;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--in);color:var(--tx);font:inherit}
+button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--ac);color:#fff;font:inherit;font-weight:600}
+#msg{font-size:14px;min-height:20px;margin:0 0 8px;color:var(--bad)}#msg.ok{color:var(--ok)}a{color:var(--ac)}
+[hidden]{display:none!important}
+</style></head><body><main>
+<h1>Nouveau mot de passe</h1>
+<section id="f"><p>Choisis un mot de passe d’au moins 8 caractères.</p>
+<label>Nouveau mot de passe<input id="a" type="password" autocomplete="new-password" autofocus></label>
+<label>Confirmation<input id="b" type="password" autocomplete="new-password"></label>
+<div id="msg"></div>
+<button id="go">Enregistrer</button></section>
+<section id="d" hidden><p>Mot de passe modifié. <a href="login.html">Se connecter</a></p></section>
+</main>
+<script>
+const $=s=>document.getElementById(s),tok=location.hash.slice(1);
+history.replaceState(null,'',location.pathname);
+async function go(){
+  const m=$('msg');m.className='';m.textContent='';
+  if(!tok){m.textContent='Lien invalide. Refais une demande depuis la page de connexion.';return}
+  if($('a').value.length<8){m.textContent='8 caractères minimum.';return}
+  if($('a').value!==$('b').value){m.textContent='Les deux saisies sont différentes.';return}
+  try{
+    const r=await fetch('api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:tok,password:$('a').value})});
+    const j=await r.json();
+    if(r.ok){$('f').hidden=true;$('d').hidden=false;return}
+    m.textContent=j.error||'Échec.';
+  }catch(e){m.textContent='Serveur injoignable.'}
+}
+$('go').onclick=go;
+document.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+</script></body></html>

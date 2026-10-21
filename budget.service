@@ -1,0 +1,20 @@
+[Unit]
+Description=Budget (appli web)
+After=network.target
+
+[Service]
+User=budget
+WorkingDirectory=/opt/budget
+ExecStart=/usr/bin/node server.js
+Environment=PORT=3000
+Environment=DATA_DIR=/var/lib/budget
+EnvironmentFile=-/etc/budget.env
+StateDirectory=budget
+Restart=always
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
