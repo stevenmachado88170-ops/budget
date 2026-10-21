@@ -25,12 +25,12 @@ systemctl daemon-reload && systemctl enable --now budget
 Le **premier** profil créé récupère les données déjà présentes (ancien format).
 Crée donc le tien en premier :
 ```
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser steven Steven steven@exemple.fr
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser marie Marie marie@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser User User User@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js adduser User User User@exemple.fr
 ```
 L'adresse e-mail (3e argument) sert à la récupération du mot de passe. Pour l'ajouter ou la changer plus tard :
 ```
-runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js setemail marie marie@exemple.fr
+runuser -u budget -- env DATA_DIR=/var/lib/budget node /opt/budget/server.js setemail User User@exemple.fr
 ```
 Le mot de passe est demandé deux fois (8 caractères minimum).
 Mot de passe oublié : relance la même commande avec `passwd` à la place de `adduser`.
