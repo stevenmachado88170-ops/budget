@@ -51,9 +51,15 @@ h1{font-size:22px;margin:4px 0 14px}
 .u{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;max-width:90%;padding:10px 14px;border-radius:10px;color:#fff;font-size:14px;display:none}
 #toast.ok{background:var(--ok)}#toast.bad{background:var(--bad)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+.ic{display:flex;gap:8px}
+.icb{width:38px;height:38px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);display:inline-grid;place-items:center;padding:0;cursor:pointer}
+.icb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icb.on{background:var(--ac);border-color:var(--ac);color:#fff}
 </style></head><body><main>
 <h1>Mon budget mensuel</h1>
-<p class="note"><span id="who"></span> · <a href="#" id="gear" style="color:var(--ac)">Paramètres</a> · <a href="#" id="out" style="color:var(--ac)">Se déconnecter</a> · <span id="st"></span></p>
+<div class="top"><span id="who"></span><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span></div>
+<p class="note" id="st" style="margin:0 0 10px"></p>
 <div class="sum" id="sum"></div>
 <div class="tabs" id="tabs"></div>
 <div id="view"></div>
@@ -143,6 +149,7 @@ const gl=()=>{let h='<div class="box"><h2>Objectifs d’épargne</h2><p class="n
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
+  $('#gear').classList.toggle('on',tab=='set');
   const fx=sum(S.fixes),vp=sum(S.vars,1),vr=sum(S.vars,2);
   const rp=S.income-fx-vp,rr=S.income-fx-vr;
   $('#sum').innerHTML=`<div class="k"><small>Revenu mensuel</small><input type="number" step="1" inputmode="decimal" data-n data-p="income" value="${S.income}" aria-label="Revenu mensuel"></div>
