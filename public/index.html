@@ -81,7 +81,8 @@ const cl=n=>n>=0?'pos':'neg';
 let tab='fixes';
 const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne']];
 
-const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${k=='fixes'?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="fixes.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label>jusqu’à <input type="month" data-p="fixes.${i}.2" value="${S[k][i][2]||''}" aria-label="Jusqu’à (vide = sans fin)"></label></div>`:''}</div>`;
+const showEnd=new Set();
+const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${k=='fixes'?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="fixes.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label>${(S[k][i][2]||showEnd.has(i))?`<label>jusqu’à <input type="month" data-p="fixes.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin"></label><button class="add" data-noend="${i}" style="padding:0">retirer</button>`:`<button class="add" data-end="${i}" style="padding:0">+ date de fin</button>`}</div>`:''}</div>`;
 const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}<button class="add" data-add="${k}">+ Ajouter une ligne</button><div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div></div>`;
 
 const cal=()=>{
@@ -178,7 +179,9 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
 document.addEventListener('click',e=>{const t=e.target;
   if(t.dataset.tab){tab=t.dataset.tab;render()}
   else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:["",0]);save();render()}
-  else if(t.dataset.del){const[k,i]=t.dataset.del.split('.');S[k].splice(+i,1);save();render()}});
+  else if(t.dataset.end){showEnd.add(+t.dataset.end);render()}
+  else if(t.dataset.noend){const i=+t.dataset.noend;S.fixes[i][2]='';showEnd.delete(i);save();render()}
+  else if(t.dataset.del){showEnd.clear();const[k,i]=t.dataset.del.split('.');S[k].splice(+i,1);save();render()}});
 document.addEventListener('change',e=>{if(e.target.id!=='csv')return;
   const fl=e.target.files[0];if(!fl)return;
   fl.text().then(txt=>{
@@ -210,7 +213,7 @@ document.addEventListener('pointermove',e=>{if(!dg)return;
   dg.to=null;if(r&&r.dataset.row.split('.')[0]===dg.from.split('.')[0]){r.classList.add('over');dg.to=r.dataset.row}});
 document.addEventListener('pointerup',()=>{if(!dg)return;
   const d=dg;dg=null;
-  if(d.to&&d.to!==d.from){const[k,a]=d.from.split('.'),b=+d.to.split('.')[1];const[x]=S[k].splice(+a,1);S[k].splice(b,0,x);save()}
+  if(d.to&&d.to!==d.from){showEnd.clear();const[k,a]=d.from.split('.'),b=+d.to.split('.')[1];const[x]=S[k].splice(+a,1);S[k].splice(b,0,x);save()}
   render()});
 document.addEventListener('pointercancel',()=>{dg=null;render()});
 $('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
