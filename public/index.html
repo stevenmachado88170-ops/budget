@@ -80,6 +80,7 @@ const mig=()=>{let c=false;S.fixes.forEach(x=>{if(x[2]===undefined){x[2]='';c=tr
   if(!S.goals){S.goals=[];c=true}return c};
 mig();
 let rev=0;
+let addFix=false;
 const BLANK=sh=>({income:0,incomeDay:2,start:0,goals:[],credits:[],fixes:[],vars:[["Courses",0,0],["Restos / fast-food",0,0],["Shopping / loisirs",0,0]],ca:(sh&&sh.ca)||[],cd:(sh&&sh.cd)||[]});
 const st=t=>{const el=document.getElementById('st');if(el)el.textContent=t};
 const save=()=>{
@@ -96,7 +97,8 @@ const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj',
 
 const showEnd=new Set();
 const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${k=='fixes'?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="fixes.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label>${(S[k][i][2]||showEnd.has(i))?`<label>jusqu’à <input type="month" data-p="fixes.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin"></label><button class="add" data-noend="${i}" style="padding:0">retirer</button>`:`<button class="add" data-end="${i}" style="padding:0">+ date de fin</button>`}</div>`:''}</div>`;
-const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}<button class="add" data-add="${k}">+ Ajouter une ligne</button><div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div></div>`;
+const newFix=()=>addFix?`<div style="border-top:1px solid var(--bd);margin-top:8px;padding-top:8px"><p class="note" style="margin:0 0 6px">Nouvelle charge fixe</p><div class="fg"><label>Libellé<input id="nfn" placeholder="Ex. Assurance habitation"></label><label>Montant (€)<input id="nfa" type="number" step="0.01" inputmode="decimal"></label><label>Jour du mois<input id="nfd" type="number" min="1" max="31" inputmode="numeric" placeholder="1 à 31"></label><label>Date de fin (facultatif)<input id="nfe" type="month"></label></div><div class="u"><button class="btn" data-a="fixok">Ajouter</button><button class="btn g" data-a="fixno">Annuler</button></div></div>`:`<button class="add" data-a="fixnew">+ Ajouter une ligne</button>`;
+const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}${k=='fixes'?newFix():`<button class="add" data-add="${k}">+ Ajouter une ligne</button>`}<div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div></div>`;
 
 const cal=()=>{
   const ev=[[+S.incomeDay||1,'Salaire',+S.income||0]];
@@ -283,6 +285,12 @@ async function openSettings(){tab='set';render();
   catch(e){$('#view').innerHTML='<p class="note">Impossible de charger les paramètres.</p>';return}
   $('#view').innerHTML=setHTML()}
 async function act(a,v){
+  if(a==='fixnew'){addFix=true;render();setTimeout(()=>{const e=document.getElementById('nfn');if(e)e.focus()},0);return}
+  if(a==='fixno'){addFix=false;render();return}
+  if(a==='fixok'){const n=val('nfn').trim(),m=parseFloat(val('nfa'))||0,d=parseInt(val('nfd'),10)||'',e=val('nfe');
+    if(!n&&!m)return toast('Indique au moins un libellé ou un montant.');
+    if(d!==''&&(d<1||d>31))return toast('Le jour doit être entre 1 et 31.');
+    S.fixes.push([n,m,e,d]);addFix=false;save();render();return}
   if(a==='photo')return $('#pf').click();
   if(a==='nophoto')return profile({avatar:''});
   if(a==='saveprof')return profile({name:val('pn'),email:val('pe'),password:val('ppw')});
@@ -322,7 +330,7 @@ render();
     me=j.me;prefs={theme:me.theme||'auto',accent:me.accent||''};applyPrefs();hdr();
     if(!j.state){S=me.owner?DEF():BLANK(j.shared);ready=true;save();render();return}
     if(!ready||j.rev!==rev){rev=j.rev;S=j.state;const was=mig();const first=!ready;ready=true;if(was)save();
-      const a=document.activeElement;if(first||!(a&&a.tagName==='INPUT'))render()}
+      const a=document.activeElement;if(first||(!(a&&a.tagName==='INPUT')&&!addFix))render()}
     st('Synchronisé')
   }catch(e){st('Hors ligne : nouvel essai en cours…')}};
   await pull();setInterval(pull,5000);
