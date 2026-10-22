@@ -132,7 +132,7 @@ function main() {
   const BASE = (process.env.BASE_URL || '').replace(/\/+$/, '');
   const lim = (max, ms) => { const m = new Map(); return k => { const a = (m.get(k) || []).filter(t => Date.now() - t < ms); a.push(Date.now()); m.set(k, a); return a.length > max; }; };
   const forgotLim = lim(5, 36e5), resetLim = lim(10, 6e5), pwLim = lim(15, 6e5), testLim = lim(5, 6e5);
-  const pub = (id, u) => ({ id, name: u.name, avatar: u.avatar || '', theme: u.theme || 'auto', accent: u.accent || '' });
+  const pub = (id, u) => ({ id, name: u.name, avatar: u.avatar || '', theme: u.theme || 'auto', accent: u.accent || '', season: u.season || 'auto' });
   const pwOk = (u, pw) => {
     if (!u || typeof pw !== 'string') return false;
     const h = Buffer.from(hashPw(pw, u.salt), 'hex'), g = Buffer.from(u.hash, 'hex');
@@ -256,6 +256,7 @@ function main() {
         b = b || {}; const U = users(), u = U.users[me.id];
         const name = String(b.name || '').trim().slice(0, 30); if (name) u.name = name;
         if (['auto', 'light', 'dark'].includes(b.theme)) u.theme = b.theme;
+        if (typeof b.season === 'string' && /^(auto|off|[a-z]{3,12})$/.test(b.season)) u.season = b.season;
         if (b.accent === '') delete u.accent; else if (/^#[0-9a-f]{6}$/i.test(b.accent || '')) u.accent = b.accent;
         if (typeof b.avatar === 'string') {
           if (b.avatar === '') delete u.avatar;
