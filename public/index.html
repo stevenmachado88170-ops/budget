@@ -57,6 +57,24 @@ h1{font-size:22px;margin:4px 0 14px}
 .icb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .icb.on{background:var(--ac);border-color:var(--ac);color:var(--act)}
 .sub input[type=checkbox]{width:18px!important;height:18px;padding:0!important;margin:0;flex:none!important}
+#fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:3}
+#fx span{position:absolute;font-size:var(--s,20px);opacity:.55;animation-duration:var(--d,12s);animation-delay:var(--w,0s);animation-timing-function:linear;animation-iteration-count:infinite;will-change:transform;user-select:none}
+#fx .fall{top:0;left:var(--x);animation-name:fall}
+#fx .rise{bottom:0;left:var(--x);animation-name:rise}
+#fx .fly{left:0;top:var(--t);animation-name:fly}
+@keyframes fall{from{transform:translate3d(0,-12vh,0) rotate(0)}to{transform:translate3d(var(--dx,0),112vh,0) rotate(300deg)}}
+@keyframes rise{0%{transform:translate3d(0,12vh,0) scale(.8);opacity:0}15%{opacity:.8}100%{transform:translate3d(var(--dx,0),-112vh,0) scale(1.1);opacity:0}}
+@keyframes fly{0%{transform:translate3d(-12vw,0,0)}50%{transform:translate3d(50vw,var(--dy,0),0)}100%{transform:translate3d(112vw,0,0)}}
+#view.enter{animation:enter .28s ease-out}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bar i{transform-origin:left;animation:grow .6s ease-out}
+@keyframes grow{from{transform:scaleX(0)}}
+.btn,.icb,.tabs button{transition:transform .12s,background .2s,color .2s,border-color .2s}
+.btn:active,.icb:active,.tabs button:active{transform:scale(.96)}
+#gear svg{transition:transform .5s}#gear:hover svg,#gear.on svg{transform:rotate(90deg)}
+#toast{animation:toast .25s ease-out}
+@keyframes toast{from{opacity:0;margin-bottom:-10px}to{opacity:1;margin-bottom:0}}
+.noanim *,.noanim *::before{animation:none!important;transition:none!important}
 </style></head><body><main>
 <h1>Mon budget mensuel <small id="evt" style="font-size:14px;font-weight:600;color:var(--ac)"></small></h1>
 <div class="top"><span id="who"></span><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span></div>
@@ -66,6 +84,7 @@ h1{font-size:22px;margin:4px 0 14px}
 <div id="view"></div>
 <button class="rst" id="exp">Exporter une sauvegarde</button> <button class="rst" id="rst">Réinitialiser les données</button>
 </main>
+<div id="fx" aria-hidden="true"></div>
 <div id="toast"></div>
 <script>
 const K='budget-v1';
@@ -156,6 +175,7 @@ function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
   $('#gear').classList.toggle('on',tab=='set');
+  if(tab!==lastTab){lastTab=tab;const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter')}
   const key=ymKey(new Date()),fx=sum(actv(S.fixes,key)),inc=sum(actv(S.revenus,key)),vp=sum(S.vars,1),vr=sum(S.vars,2);
   const rp=inc-fx-vp,rr=inc-fx-vr;
   $('#sum').innerHTML=`<div class="k"><small>Revenus du mois</small><b>${f(inc)}</b></div>
@@ -263,6 +283,18 @@ const SEAS=[
   l:{bg:'#f1f4fb',card:'#ffffff',tx:'#0f1a33',mu:'#5b6b94',ac:'#1d3fae',act:'#ffffff',bd:'#d6ddf0',in:'#f6f8fd'},
   d:{bg:'#0b1226',card:'#131d3a',tx:'#eef2ff',mu:'#9fb0e0',ac:'#ff5a5f',act:'#2a0709',bd:'#243257',in:'#0e1630'}}
 ];
+const FX={halloween:{n:14,k:[['🎃','fall'],['👻','fall'],['🦇','fly'],['🦇','fly']]},noel:{n:22,k:[['❄️','fall'],['❄️','fall'],['✨','fall']]},nouvelan:{n:20,k:[['🎉','fall'],['✨','fall'],['🎊','fall'],['⭐','fall']]},valentin:{n:14,k:[['💗','rise'],['💕','rise'],['❤️','rise']]},paques:{n:12,k:[['🥚','fall'],['🐣','fall'],['🌷','fall']]},fetenat:{n:14,k:[['✨','rise'],['🎆','rise'],['⭐','fall']]}};
+let animOn=(()=>{try{const v=localStorage.getItem('budget-anim');if(v!==null)return v==='1'}catch(e){}return !(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)})();
+let fxKey=null,lastTab=null;
+document.documentElement.classList.toggle('noanim',!animOn);
+function buildFx(sn){const c=document.getElementById('fx');if(!c)return;c.innerHTML='';
+  const cfg=sn&&animOn&&FX[sn.id];if(!cfg)return;const R=(a,b)=>a+Math.random()*(b-a);
+  for(let i=0;i<cfg.n;i++){const k=cfg.k[i%cfg.k.length],sp=document.createElement('span'),d=k[1]==='fly'?R(16,28):R(9,18),st=sp.style;
+    sp.textContent=k[0];sp.className=k[1];
+    st.setProperty('--d',d.toFixed(1)+'s');st.setProperty('--w',(-R(0,d)).toFixed(1)+'s');st.setProperty('--s',Math.round(R(14,26))+'px');
+    st.setProperty('--x',R(0,96).toFixed(1)+'%');st.setProperty('--t',R(6,70).toFixed(0)+'%');
+    st.setProperty('--dx',Math.round(R(-60,60))+'px');st.setProperty('--dy',Math.round(R(-70,70))+'px');
+    c.appendChild(sp)}}
 const seasonNow=()=>{const s=prefs.season||'auto';if(s==='off')return null;
   if(s==='auto'){const d=new Date();return SEAS.find(x=>x.on(d))||null}
   return SEAS.find(x=>x.id===s)||null};
@@ -272,7 +304,8 @@ function applyPrefs(){const r=document.documentElement,sn=seasonNow();
   SV.forEach(k=>r.style.removeProperty(k));
   if(sn){const p=dark()?sn.d:sn.l;SV.forEach(k=>r.style.setProperty(k,p[k.slice(2)]));r.setAttribute('data-season',sn.id)}
   else{r.removeAttribute('data-season');if(prefs.accent)r.style.setProperty('--ac',dark()?mix(prefs.accent,.4):prefs.accent)}
-  const el=document.getElementById('evt');if(el)el.textContent=sn?sn.e+' '+sn.n:''}
+  const el=document.getElementById('evt');if(el)el.textContent=sn?sn.e+' '+sn.n:'';
+  const fk=(sn?sn.id:'')+'|'+animOn;if(fk!==fxKey){fxKey=fk;buildFx(sn)}}
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyPrefs);
 const av=(u,z)=>u.avatar?`<img src="${u.avatar}" alt="" style="width:${z}px;height:${z}px;border-radius:50%;object-fit:cover;display:block">`:`<span style="width:${z}px;height:${z}px;border-radius:50%;background:var(--ac);color:var(--act);display:inline-grid;place-items:center;font-weight:700;font-size:${Math.round(z*.45)}px">${esc(((u.name||'?')[0]||'?').toUpperCase())}</span>`;
 const hdr=()=>{$('#who').innerHTML=`<span style="display:inline-flex;align-items:center;gap:8px;vertical-align:middle">${av(me,28)}<b>${esc(me.name)}</b></span>`};
@@ -299,7 +332,7 @@ const setHTML=()=>{
     <div class="fg">${inp('ppw','Mot de passe actuel (seulement pour changer l’e-mail)','','password','autocomplete="current-password"')}</div>
     <button class="btn" data-a="saveprof">Enregistrer le profil</button>`);
   h+=box('Apparence',`<p class="note">Thème</p><div class="tabs" style="margin-bottom:12px">${[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(t=>`<button data-a="theme" data-v="${t[0]}" class="${(u.theme||'auto')==t[0]?'on':''}">${t[1]}</button>`).join('')}</div>
-    <p class="note">Couleur principale</p><div class="u">${SW.map(c=>`<button data-a="accent" data-v="${c}" aria-label="Couleur ${c}" style="width:34px;height:34px;border-radius:50%;border:3px solid ${u.accent===c?'var(--tx)':'transparent'};background:${c}"></button>`).join('')}<button class="btn g" data-a="accent" data-v="" ${mini}>Par défaut</button></div><p class="note" style="margin-top:14px">Thèmes événementiels</p><div class="tabs" style="margin-bottom:6px">${[['auto','Auto'],['off','Désactivé']].concat(SEAS.map(x=>[x.id,x.e+' '+x.n])).map(t=>`<button data-a="season" data-v="${t[0]}" class="${(u.season||'auto')==t[0]?'on':''}">${t[1]}</button>`).join('')}</div><p class="note" style="margin:0">« Auto » applique le thème de la fête en cours. Un thème événementiel remplace la couleur choisie ci-dessus.</p>`);
+    <p class="note">Couleur principale</p><div class="u">${SW.map(c=>`<button data-a="accent" data-v="${c}" aria-label="Couleur ${c}" style="width:34px;height:34px;border-radius:50%;border:3px solid ${u.accent===c?'var(--tx)':'transparent'};background:${c}"></button>`).join('')}<button class="btn g" data-a="accent" data-v="" ${mini}>Par défaut</button></div><p class="note" style="margin-top:14px">Thèmes événementiels</p><div class="tabs" style="margin-bottom:6px">${[['auto','Auto'],['off','Désactivé']].concat(SEAS.map(x=>[x.id,x.e+' '+x.n])).map(t=>`<button data-a="season" data-v="${t[0]}" class="${(u.season||'auto')==t[0]?'on':''}">${t[1]}</button>`).join('')}</div><p class="note" style="margin:0">« Auto » applique le thème de la fête en cours. Un thème événementiel remplace la couleur choisie ci-dessus.</p><label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:14px"><input type="checkbox" id="animchk" ${animOn?'checked':''} style="width:18px;height:18px;margin:0"> Animations (effets de fête et transitions)</label>`);
   h+=box('Sécurité',`<div class="fg">${inp('cp','Mot de passe actuel','','password','autocomplete="current-password"')}${inp('np','Nouveau mot de passe (8 min.)','','password','autocomplete="new-password"')}</div><button class="btn" data-a="savepw">Changer le mot de passe</button>`);
   h+=box('Données',`<p class="note">Sauvegarde ou restaure tes données personnelles. Le compte commun n’est pas touché par l’import.</p><div class="u"><button class="btn g" data-a="export">Exporter</button><button class="btn g" data-a="import">Importer un fichier…</button><input type="file" id="imp" accept="application/json,.json" hidden></div>`);
   if(adm){
@@ -353,6 +386,7 @@ document.addEventListener('change',async e=>{const t=e.target;
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.endchk){const key=t.dataset.endchk,[k,i]=key.split('.');
     if(t.checked)showEnd.add(key);else{S[k][+i][2]='';showEnd.delete(key);save()}render()}
+  if(t.id==='animchk'){animOn=t.checked;try{localStorage.setItem('budget-anim',animOn?'1':'0')}catch(x){}document.documentElement.classList.toggle('noanim',!animOn);applyPrefs()}
   if(t.id==='nfc'){const w=document.getElementById('nfew');if(w)w.style.display=t.checked?'':'none'}});
 $('#gear').onclick=e=>{e.preventDefault();openSettings()};
 $('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
