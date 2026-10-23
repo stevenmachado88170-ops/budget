@@ -75,6 +75,7 @@ h1{font-size:22px;margin:4px 0 14px}
 #toast{animation:toast .25s ease-out}
 @keyframes toast{from{opacity:0;margin-bottom:-10px}to{opacity:1;margin-bottom:0}}
 .noanim *,.noanim *::before{animation:none!important;transition:none!important}
+.sub input[type=date]{width:150px!important}
 </style></head><body><main>
 <h1>Mon budget mensuel <small id="evt" style="font-size:14px;font-weight:600;color:var(--ac)"></small></h1>
 <div class="top"><span id="who"></span><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span></div>
@@ -97,6 +98,8 @@ const DAYS={"Compte joint":2,"Essence":2,"Hyundai (crédit)":6,"Assurance auto":
 const mig=()=>{let c=false;S.fixes.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]=DAYS[x[0]]||'';c=true}});
   if(!S.revenus){S.revenus=[["Salaire",+S.income||0,"",S.incomeDay||2]];c=true}
   S.revenus.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]='';c=true}});
+  if(!S.divers){S.divers=[];c=true}
+  if(!S.vars.some(x=>/^divers/i.test(x[0]))){S.vars.push(["Divers",0,0]);c=true}
   if(!S.credits){S.credits=[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}];c=true}
   if(!S.goals){S.goals=[];c=true}return c};
 mig();
@@ -119,7 +122,7 @@ let tab='fixes';
 const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne']];
 
 const showEnd=new Set();
-const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${(k=='fixes'||k=='revenus')?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="${k}.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label><input type="checkbox" data-endchk="${k}.${i}" ${(S[k][i][2]||showEnd.has(k+'.'+i))?'checked':''}> Date de fin</label>${(S[k][i][2]||showEnd.has(k+'.'+i))?`<input type="month" data-p="${k}.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin">`:''}</div>`:''}</div>`;
+const row=(k,i)=>`<div class="r" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${(k=='fixes'||k=='revenus')?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="${k}.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label><input type="checkbox" data-endchk="${k}.${i}" ${(S[k][i][2]||showEnd.has(k+'.'+i))?'checked':''}> Date de fin</label>${(S[k][i][2]||showEnd.has(k+'.'+i))?`<input type="month" data-p="${k}.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin">`:''}</div>`:''}${k=='divers'?`<div class="sub"><label>Date <input type="date" data-p="divers.${i}.2" value="${S[k][i][2]||''}"></label></div>`:''}</div>`;
 const newFix=k=>addFix===k?`<div style="border-top:1px solid var(--bd);margin-top:8px;padding-top:8px"><p class="note" style="margin:0 0 6px">${k=='revenus'?'Nouveau revenu':'Nouvelle charge fixe'}</p><div class="fg"><label>Libellé<input id="nfn" placeholder="${k=='revenus'?'Ex. Allocation CAF':'Ex. Assurance habitation'}"></label><label>Montant (€)<input id="nfa" type="number" step="0.01" inputmode="decimal"></label><label>Jour du mois<input id="nfd" type="number" min="1" max="31" inputmode="numeric" placeholder="1 à 31"></label><label style="flex-direction:row;align-items:center;gap:8px"><input id="nfc" type="checkbox" style="width:18px;height:18px;margin:0;padding:0;flex:none"> Date de fin</label><label id="nfew" style="display:none">Mois de fin<input id="nfe" type="month"></label></div><div class="u"><button class="btn" data-a="fixok">Ajouter</button><button class="btn g" data-a="fixno">Annuler</button></div></div>`:`<button class="add" data-a="fixnew" data-v="${k}">+ Ajouter ${k=='revenus'?'un revenu':'une ligne'}</button>`;
 const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}${(k=='fixes'||k=='revenus')?newFix(k):`<button class="add" data-add="${k}">+ Ajouter une ligne</button>`}<div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div></div>`;
 
@@ -152,7 +155,7 @@ const crd=()=>{let h='';
         L('Mensualité'+(ins?' (assurance incluse)':''),f(p+ins))+
         (+x.pay>0&&cp&&Math.abs(cp-p)>0.5?L('Mensualité calculée (sans assurance)',f(cp)):'')+
         L('Intérêts sur la durée',f(tot))+L('Coût des intérêts + assurance',f(tot+ins*n))+
-        L('Échéances payées / restantes',e+' / '+rem)+L('Capital restant dû (estimé)',f(bn))+L('Intérêts restants',f(left))+
+        L('Échéances payées / restantes',e+' / '+rem)+L('Total déjà versé',f(e*(p+ins)))+L('dont capital remboursé',f(cap-bn))+L('dont intérêts + assurance',f(paid+e*ins))+L('Capital restant dû (estimé)',f(bn))+L('Intérêts restants',f(left))+L('Reste à payer (mensualités)',f(rem*(p+ins)))+
         (sy?L('Dernière échéance',dt(sy,sm+n-2)):'');
       if(ex>0&&rem>0){const s2=sim(Math.max(0,bn-ex),p,r,600);
         out+=`<p class="note" style="margin:8px 0 0">Remboursement anticipé de ${f(ex)} : ${s2.k>=600?'mensualité trop faible pour solder le reste':'tu économises '+f(Math.max(0,left-s2.it))+' d’intérêts et '+Math.max(0,rem-s2.k)+' mois'}.</p>`}
@@ -171,11 +174,17 @@ const gl=()=>{let h='<div class="box"><h2>Objectifs d’épargne</h2><p class="n
       fld('Objectif (€)',`goals.${i}.target`,g.target,1)+fld('Déjà épargné (€)',`goals.${i}.saved`,g.saved,1)+fld('Mis de côté / mois (€)',`goals.${i}.month`,g.month,1)+
       `</div><div class="bar"><i style="width:${t?Math.min(100,s/t*100):0}%"></i></div><p class="note" style="margin:0">${t&&!left?'Objectif atteint.':(mo===null?'Indique un montant mensuel pour estimer la date.':'Reste '+f(left)+' · '+mo+' mois · vers '+end)}</p></div>`});
   return h+`<button class="add" data-add="goals">+ Ajouter un objectif</button><div class="tot"><span>Épargne mensuelle totale</span><span>${f(tm)}</span></div></div>`};
+const ymd=d=>ymKey(d)+'-'+String(d.getDate()).padStart(2,'0');
+const divMonth=()=>{const key=ymKey(new Date());return (S.divers||[]).reduce((t,x)=>t+((x[2]||key).startsWith(key)?(+x[1]||0):0),0)};
+const syncDiv=()=>{const dv=S.vars.find(x=>/^divers/i.test(x[0]));if(dv)dv[2]=Math.round(divMonth()*100)/100};
+const dvBox=()=>{const key=ymKey(new Date()),all=S.divers||[],idx=all.map((_,i)=>i).filter(i=>(all[i][2]||key).startsWith(key)),old=all.length-idx.length;
+  return `<div class="box"><h2>Dépenses diverses</h2><p class="note">Achats ponctuels du mois (cadeaux, réparations, sorties…). Leur total alimente le poste « Divers » ci-dessus.</p>${idx.map(i=>row('divers',i)).join('')}<button class="add" data-add="divers">+ Ajouter une dépense</button><div class="tot"><span>Total du mois en cours</span><span>${f(divMonth())}</span></div>${old?`<p class="note" style="margin:8px 0 0">${old} dépense(s) des mois précédents conservée(s).</p>`:''}</div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
   $('#gear').classList.toggle('on',tab=='set');
   if(tab!==lastTab){lastTab=tab;const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter')}
+  syncDiv();
   const key=ymKey(new Date()),fx=sum(actv(S.fixes,key)),inc=sum(actv(S.revenus,key)),vp=sum(S.vars,1),vr=sum(S.vars,2);
   const rp=inc-fx-vp,rr=inc-fx-vr;
   $('#sum').innerHTML=`<div class="k"><small>Revenus du mois</small><b>${f(inc)}</b></div>
@@ -188,8 +197,8 @@ function render(){
   if(tab=='prev'){
     h=`<div class="box"><h2>Budgets variables</h2><p class="note">Fixe un plafond, puis saisis ce que tu as déjà dépensé ce mois-ci.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>`;
     S.vars.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
-      h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.1" value="${v[1]}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.2" value="${v[2]}"><button data-del="vars.${i}" aria-label="Supprimer">×</button></div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
-    h+=`<button class="add" data-add="vars">+ Ajouter un poste</button><div class="tot"><span>Prévu / réel</span><span>${f(vp)} / ${f(vr)}</span></div></div>
+      h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.1" value="${v[1]}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="vars.${i}.2" value="${v[2]}"${/^divers/i.test(v[0])?' readonly title="Calculé depuis Dépenses diverses"':''}><button data-del="vars.${i}" aria-label="Supprimer">×</button></div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+    h+=`<button class="add" data-add="vars">+ Ajouter un poste</button><div class="tot"><span>Prévu / réel</span><span>${f(vp)} / ${f(vr)}</span></div></div>${dvBox()}
     <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div><div class="box"><h2>Bilan du mois</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Revenu − fixes − variables prévus</span><span class="${cl(rp)}">${f(rp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Avec les dépenses réelles</span><span class="${cl(rr)}">${f(rr)}</span></div></div>`;
   }
   if(tab=='com'){
@@ -219,7 +228,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
   setP(t.dataset.p,t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value);save();render()});
 document.addEventListener('click',e=>{const t=e.target;
   if(t.dataset.tab){tab=t.dataset.tab;render()}
-  else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:["",0]);save();render()}
+  else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:["",0]);save();render()}
   else if(t.dataset.end){showEnd.add(t.dataset.end);render()}
   else if(t.dataset.noend){const[k,i]=t.dataset.noend.split('.');S[k][+i][2]='';showEnd.delete(t.dataset.noend);save();render()}
   else if(t.dataset.del){showEnd.clear();const[k,i]=t.dataset.del.split('.');S[k].splice(+i,1);save();render()}});
