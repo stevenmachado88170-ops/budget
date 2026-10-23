@@ -98,6 +98,8 @@ const DAYS={"Compte joint":2,"Essence":2,"Hyundai (crédit)":6,"Assurance auto":
 const mig=()=>{let c=false;S.fixes.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]=DAYS[x[0]]||'';c=true}});
   if(!S.revenus){S.revenus=[["Salaire",+S.income||0,"",S.incomeDay||2]];c=true}
   S.revenus.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]='';c=true}});
+  if(!Array.isArray(S.cd)){S.cd=[];c=true}
+  S.cd.forEach(x=>{if(x[2]===undefined){x[2]=0;c=true}});
   if(!S.divers){S.divers=[];c=true}
   if(!S.vars.some(x=>/^divers/i.test(x[0]))){S.vars.push(["Divers",0,0]);c=true}
   if(!S.credits){S.credits=[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}];c=true}
@@ -179,6 +181,11 @@ const divMonth=()=>{const key=ymKey(new Date());return (S.divers||[]).reduce((t,
 const syncDiv=()=>{const dv=S.vars.find(x=>/^divers/i.test(x[0]));if(dv)dv[2]=Math.round(divMonth()*100)/100};
 const dvBox=()=>{const key=ymKey(new Date()),all=S.divers||[],idx=all.map((_,i)=>i).filter(i=>(all[i][2]||key).startsWith(key)),old=all.length-idx.length;
   return `<div class="box"><h2>Dépenses diverses</h2><p class="note">Achats ponctuels du mois (cadeaux, réparations, sorties…). Leur total alimente le poste « Divers » ci-dessus.</p>${idx.map(i=>row('divers',i)).join('')}<button class="add" data-add="divers">+ Ajouter une dépense</button><div class="tot"><span>Total du mois en cours</span><span>${f(divMonth())}</span></div>${old?`<p class="note" style="margin:8px 0 0">${old} dépense(s) des mois précédents conservée(s).</p>`:''}</div>`};
+const cdBox=()=>{const P=sum(S.cd,1),R=sum(S.cd,2);
+  let h='<div class="box"><h2>Dépenses communes</h2><p class="note">Loyer, énergie, courses communes… Fixe le prévu, saisis le réel. Partagé entre vos deux profils.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>';
+  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
+    h+=`<div class="r" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.1" value="${v[1]||0}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.2" value="${v[2]||0}"><button data-del="cd.${i}" aria-label="Supprimer">×</button></div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+  return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div></div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -202,9 +209,9 @@ function render(){
     <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div><div class="box"><h2>Bilan du mois</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Revenu − fixes − variables prévus</span><span class="${cl(rp)}">${f(rp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Avec les dépenses réelles</span><span class="${cl(rr)}">${f(rr)}</span></div></div>`;
   }
   if(tab=='com'){
-    const a=sum(S.ca),d=sum(S.cd),s=a-d;
-    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+list('cd','Dépenses communes','Loyer, énergie, courses communes… Partagé entre vos deux profils.')+
-    `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses</span><span class="${cl(s)}">${f(s)}</span></div>`+
+    const a=sum(S.ca),dp=sum(S.cd,1),dr=sum(S.cd,2),sp=a-dp,sr=a-dr;
+    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox()+
+    `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses prévues</span><span class="${cl(sp)}">${f(sp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Apports − dépenses réelles</span><span class="${cl(sr)}">${f(sr)}</span></div>`+
     (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
   }
   if(tab=='proj'){
@@ -228,7 +235,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
   setP(t.dataset.p,t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value);save();render()});
 document.addEventListener('click',e=>{const t=e.target;
   if(t.dataset.tab){tab=t.dataset.tab;render()}
-  else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:["",0]);save();render()}
+  else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:k=='cd'?["",0,0]:["",0]);save();render()}
   else if(t.dataset.end){showEnd.add(t.dataset.end);render()}
   else if(t.dataset.noend){const[k,i]=t.dataset.noend.split('.');S[k][+i][2]='';showEnd.delete(t.dataset.noend);save();render()}
   else if(t.dataset.del){showEnd.clear();const[k,i]=t.dataset.del.split('.');S[k].splice(+i,1);save();render()}});
