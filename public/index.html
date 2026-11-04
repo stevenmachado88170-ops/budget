@@ -88,6 +88,8 @@ main{max-width:1800px;padding:24px 40px}
 #view>.box{break-inside:avoid;display:block}
 #view>:not(.box){column-span:all}
 }
+.r.off{opacity:.45}
+.sub input[data-p$=".t"]{width:96px!important}
 </style></head><body><main>
 <h1>Mon budget mensuel <small id="evt" style="font-size:14px;font-weight:600;color:var(--ac)"></small></h1>
 <div class="top"><span id="who"></span><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span></div>
@@ -120,7 +122,7 @@ mig();
 let rev=0;
 let addFix=null;
 const ymKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-const actv=(a,key)=>a.filter(x=>!x[2]||key<=x[2]);
+const actv=(a,key)=>a.filter(x=>(!x[2]||key<=x[2])&&inWin(x[5],key));
 const BLANK=sh=>({revenus:[],start:0,goals:[],credits:[],fixes:[],vars:[["Courses",0,0],["Restos / fast-food",0,0],["Shopping / loisirs",0,0]],ca:(sh&&sh.ca)||[],cd:(sh&&sh.cd)||[]});
 const st=t=>{const el=document.getElementById('st');if(el)el.textContent=t};
 const save=()=>{
@@ -136,11 +138,19 @@ let tab='fixes';
 const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne']];
 
 const showEnd=new Set();
-const row=(k,i)=>`<div class="r${(k=='fixes'||k=='revenus')&&S[k][i][4]===ymKey(new Date())?' paid':''}" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span>${(k=='fixes'||k=='revenus')?`<input type="checkbox" class="pd" data-paid="${k}.${i}" ${S[k][i][4]===ymKey(new Date())?'checked':''} title="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}" aria-label="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}">`:''}<input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${(k=='fixes'||k=='revenus')?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="${k}.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label><input type="checkbox" data-endchk="${k}.${i}" ${(S[k][i][2]||showEnd.has(k+'.'+i))?'checked':''}> Date de fin</label>${(S[k][i][2]||showEnd.has(k+'.'+i))?`<input type="month" data-p="${k}.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin">`:''}</div>`:''}${k=='divers'?`<div class="sub"><label>Date <input type="date" data-p="divers.${i}.2" value="${S[k][i][2]||''}"></label></div>`:''}</div>`;
+const row=(k,i)=>`<div class="r${(k=='fixes'||k=='revenus')&&S[k][i][4]===ymKey(new Date())?' paid':''}${(k=='fixes'||k=='revenus')&&!actv([S[k][i]],ymKey(new Date())).length?' off':''}" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span>${(k=='fixes'||k=='revenus')?`<input type="checkbox" class="pd" data-paid="${k}.${i}" ${S[k][i][4]===ymKey(new Date())?'checked':''} title="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}" aria-label="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}">`:''}<input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="number" step="0.01" inputmode="decimal" data-n data-p="${k}.${i}.1" value="${S[k][i][1]}"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${(k=='fixes'||k=='revenus')?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="${k}.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label><input type="checkbox" data-endchk="${k}.${i}" ${(S[k][i][2]||showEnd.has(k+'.'+i))?'checked':''}> Date de fin</label>${(S[k][i][2]||showEnd.has(k+'.'+i))?`<input type="month" data-p="${k}.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin">`:''}</div>`:''}${(k=='fixes')?instUI(k,i):''}${k=='divers'?`<div class="sub"><label>Date <input type="date" data-p="divers.${i}.2" value="${S[k][i][2]||''}"></label></div>`:''}</div>`;
 const newFix=k=>addFix===k?`<div style="border-top:1px solid var(--bd);margin-top:8px;padding-top:8px"><p class="note" style="margin:0 0 6px">${k=='revenus'?'Nouveau revenu':'Nouvelle charge fixe'}</p><div class="fg"><label>Libellé<input id="nfn" placeholder="${k=='revenus'?'Ex. Allocation CAF':'Ex. Assurance habitation'}"></label><label>Montant (€)<input id="nfa" type="number" step="0.01" inputmode="decimal"></label><label>Jour du mois<input id="nfd" type="number" min="1" max="31" inputmode="numeric" placeholder="1 à 31"></label><label style="flex-direction:row;align-items:center;gap:8px"><input id="nfc" type="checkbox" style="width:18px;height:18px;margin:0;padding:0;flex:none"> Date de fin</label><label id="nfew" style="display:none">Mois de fin<input id="nfe" type="month"></label></div><div class="u"><button class="btn" data-a="fixok">Ajouter</button><button class="btn g" data-a="fixno">Annuler</button></div></div>`:`<button class="add" data-a="fixnew" data-v="${k}">+ Ajouter ${k=='revenus'?'un revenu':'une ligne'}</button>`;
+const addM=(ym,k)=>{const q=ym.split('-').map(Number);return ymKey(new Date(q[0],q[1]-1+k,1))};
+const inWin=(i,key)=>!i||!i.n||!i.s||(key>=i.s&&key<=addM(i.s,i.n-1));
+const instInfo=(i,amt)=>{if(!i||!i.n||!i.s)return 'Choisis le mois du premier paiement.';
+  const q=i.s.split('-').map(Number),now=new Date(),n=(now.getFullYear()-q[0])*12+now.getMonth()+1-q[1]+1,reste=Math.max(0,i.n-Math.max(n,0));
+  const st=n<1?'commence en '+dt(q[0],q[1]-1):(n>i.n?'terminé':'échéance '+n+'/'+i.n);
+  return i.n+' × '+f(amt)+' · '+st+(n>=1&&n<=i.n?' · reste '+f(reste*amt):'')};
+const instUI=(k,i)=>{const x=S[k][i],ix=k=='cd'?4:5,v=x[ix],p=`${k}.${i}.${ix}`;
+  return `<div class="sub"><label><input type="checkbox" data-instchk="${k}.${i}" ${v?'checked':''}> Paiement en plusieurs fois</label>${v?`<label>Total <input type="number" step="0.01" inputmode="decimal" data-n data-p="${p}.t" value="${v.t}"></label><label>en <input type="number" min="2" max="60" inputmode="numeric" data-n data-p="${p}.n" value="${v.n}"> fois</label><label>dès <input type="month" data-p="${p}.s" value="${v.s||''}"></label>`:''}</div>${v?`<div class="sub" style="font-size:12px;padding-top:0">${instInfo(v,+x[1]||0)}</div>`:''}`};
 const paidLine=k=>{const key=ymKey(new Date()),a=actv(S[k],key),done=sum(a.filter(x=>x[4]===key)),rest=sum(a.filter(x=>x[4]!==key)),st='border:0;margin:3px 0 0;padding:0;font-weight:400;color:var(--mu)';
   return `<div class="tot" style="${st}"><span>${k=='fixes'?'Déjà passé ce mois':'Déjà reçu ce mois'}</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>${k=='fixes'?'Reste à passer':'Reste à recevoir'}</span><span>${f(rest)}</span></div>`};
-const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}${(k=='fixes'||k=='revenus')?newFix(k):`<button class="add" data-add="${k}">+ Ajouter une ligne</button>`}<div class="tot"><span>Total</span><span>${f(sum(S[k]))}</span></div>${(k=='fixes'||k=='revenus')?paidLine(k):''}</div>`;
+const list=(k,title,note)=>`<div class="box"><h2>${title}</h2>${note?`<p class="note">${note}</p>`:''}${S[k].map((_,i)=>row(k,i)).join('')}${(k=='fixes'||k=='revenus')?newFix(k):`<button class="add" data-add="${k}">+ Ajouter une ligne</button>`}<div class="tot"><span>Total</span><span>${f(sum(actv(S[k],ymKey(new Date()))))}</span></div>${(k=='fixes'||k=='revenus')?paidLine(k):''}</div>`;
 
 const cal=()=>{
   const key=ymKey(new Date()),ev=[],fa=actv(S.fixes,key),ra=actv(S.revenus,key);
@@ -195,11 +205,12 @@ const divMonth=()=>{const key=ymKey(new Date());return (S.divers||[]).reduce((t,
 const syncDiv=()=>{const dv=S.vars.find(x=>/^divers/i.test(x[0]));if(dv)dv[2]=Math.round(divMonth()*100)/100};
 const dvBox=()=>{const key=ymKey(new Date()),all=S.divers||[],idx=all.map((_,i)=>i).filter(i=>(all[i][2]||key).startsWith(key)),old=all.length-idx.length;
   return `<div class="box"><h2>Dépenses diverses</h2><p class="note">Achats ponctuels du mois (cadeaux, réparations, sorties…). Leur total alimente le poste « Divers » ci-dessus.</p>${idx.map(i=>row('divers',i)).join('')}<button class="add" data-add="divers">+ Ajouter une dépense</button><div class="tot"><span>Total du mois en cours</span><span>${f(divMonth())}</span></div>${old?`<p class="note" style="margin:8px 0 0">${old} dépense(s) des mois précédents conservée(s).</p>`:''}</div>`};
-const cdBox=()=>{const P=sum(S.cd,1),R=sum(S.cd,2);
-  let h='<div class="box"><h2>Dépenses communes</h2><p class="note">Loyer, énergie, courses communes… Fixe le prévu, saisis le réel. Partagé entre vos deux profils.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>';
-  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
-    h+=`<div class="r" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.1" value="${v[1]||0}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.2" value="${v[2]||0}"><button data-del="cd.${i}" aria-label="Supprimer">×</button></div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
-  return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div></div>`};
+const cdBox=()=>{const key=ymKey(new Date()),on=x=>inWin(x[4],key),A=S.cd.filter(on),P=sum(A,1),R=sum(A,2),
+    done=sum(A.filter(x=>x[3]===key),1),rest=sum(A.filter(x=>x[3]!==key),1),st='border:0;margin:3px 0 0;padding:0;font-weight:400;color:var(--mu)';
+  let h='<div class="box"><h2>Dépenses communes</h2><p class="note">Loyer, énergie, courses communes… Fixe le prévu, saisis le réel, coche ce qui est passé. Partagé entre vos deux profils.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>';
+  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0),paid=v[3]===key;
+    h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois"><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.1" value="${v[1]||0}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.2" value="${v[2]||0}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+  return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div><div class="tot" style="${st}"><span>Déjà passé ce mois</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>Reste à passer</span><span>${f(rest)}</span></div></div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -223,7 +234,7 @@ function render(){
     <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div><div class="box"><h2>Bilan du mois</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Revenu − fixes − variables prévus</span><span class="${cl(rp)}">${f(rp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Avec les dépenses réelles</span><span class="${cl(rr)}">${f(rr)}</span></div></div>`;
   }
   if(tab=='com'){
-    const a=sum(S.ca),dp=sum(S.cd,1),dr=sum(S.cd,2),sp=a-dp,sr=a-dr;
+    const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=sum(cdA,2),sp=a-dp,sr=a-dr;
     h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox()+
     `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses prévues</span><span class="${cl(sp)}">${f(sp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Apports − dépenses réelles</span><span class="${cl(sr)}">${f(sr)}</span></div>`+
     (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
@@ -233,7 +244,7 @@ function render(){
     h='<div class="box"><h2>6 prochains mois</h2><p class="note">Revenu − fixes encore actives − variables prévus. Une date de fin sur une ligne fixe (ex. l’impôt) la retire des mois suivants.</p>';
     for(let n=0;n<6;n++){
       const key=y+'-'+String(m+1).padStart(2,'0');
-      const f2=S.fixes.reduce((t,x)=>t+(!x[2]||key<=x[2]?(+x[1]||0):0),0);
+      const f2=sum(actv(S.fixes,key));
       const r=sum(actv(S.revenus,key))-f2-vp;cum+=r;
       h+=`<div class="tot" style="border:0;margin:0 0 6px;padding:0;font-weight:400"><span>${new Date(y,m,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}<small style="color:var(--mu)"> · fixes ${f(f2)}</small></span><span class="${cl(r)}">${f(r)}</span></div>`;
       m++;if(m>11){m=0;y++}
@@ -246,7 +257,10 @@ function render(){
 }
 function setP(p,v){const a=p.split('.');let o=S;for(let i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
-  setP(t.dataset.p,t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value);save();render()});
+  setP(t.dataset.p,t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value);
+  const m=/^(fixes|cd)\.(\d+)\.[45]\.(t|n)$/.exec(t.dataset.p);
+  if(m){const x=S[m[1]][+m[2]],v=x[m[1]==='cd'?4:5];if(v&&+v.t>0&&+v.n>0)x[1]=Math.round(v.t/v.n*100)/100}
+  save();render()});
 document.addEventListener('click',e=>{const t=e.target;
   if(t.dataset.tab){tab=t.dataset.tab;render()}
   else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:k=='cd'?["",0,0]:["",0]);save();render()}
@@ -416,7 +430,11 @@ document.addEventListener('change',async e=>{const t=e.target;
 document.addEventListener('change',e=>{const t=e.target;
   if(t.dataset&&t.dataset.endchk){const key=t.dataset.endchk,[k,i]=key.split('.');
     if(t.checked)showEnd.add(key);else{S[k][+i][2]='';showEnd.delete(key);save()}render()}
-  if(t.dataset&&t.dataset.paid){const[k,i]=t.dataset.paid.split('.'),x=S[k][+i];x[4]=t.checked?ymKey(new Date()):'';save();render()}
+  if(t.dataset&&t.dataset.paid){const[k,i]=t.dataset.paid.split('.'),x=S[k][+i];x[k==='cd'?3:4]=t.checked?ymKey(new Date()):'';save();render()}
+  if(t.dataset&&t.dataset.instchk){const[k,i]=t.dataset.instchk.split('.'),x=S[k][+i],ix=k==='cd'?4:5;
+    if(t.checked){x[ix]={t:+x[1]||0,n:2,s:ymKey(new Date())};x[1]=Math.round(x[ix].t/2*100)/100}
+    else{if(x[ix]&&x[ix].t)x[1]=x[ix].t;x[ix]=null}
+    save();render()}
   if(t.id==='animchk'){animOn=t.checked;try{localStorage.setItem('budget-anim',animOn?'1':'0')}catch(x){}document.documentElement.classList.toggle('noanim',!animOn);applyPrefs()}
   if(t.id==='nfc'){const w=document.getElementById('nfew');if(w)w.style.display=t.checked?'':'none'}});
 $('#gear').onclick=e=>{e.preventDefault();openSettings()};
