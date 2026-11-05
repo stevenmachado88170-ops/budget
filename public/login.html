@@ -16,6 +16,15 @@ button.p{width:100%;padding:12px;border:0;border-radius:10px;background:var(--ac
 button.l{background:none;border:0;color:var(--ac);font:inherit;font-size:14px;padding:12px 0 0;width:100%}
 #err{color:var(--bad);font-size:14px;min-height:20px;margin:0 0 8px}#okm{color:var(--ok);font-size:14px;margin:0 0 8px}
 [hidden]{display:none!important}
+/* Helios */
+:root{--bg:#efe6ee;--card:#ffffff;--tx:#241a23;--mu:#7d6f7c;--ac:#9a5a95;--bd:rgba(70,35,68,.13);--in:#f6eff5;--grad:linear-gradient(120deg,color-mix(in srgb,var(--ac) 40%,#000),color-mix(in srgb,var(--ac) 84%,#000))}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0a0e;--card:#181319;--tx:#f5eef4;--mu:#a99ca8;--ac:#cf9fca;--bd:rgba(255,255,255,.09);--in:rgba(255,255,255,.05)}}
+body{font-family:"Outfit","Urbanist","Avenir Next","Segoe UI",system-ui,sans-serif;background-image:radial-gradient(800px 480px at 15% -10%,color-mix(in srgb,var(--ac) 20%,transparent),transparent 65%),radial-gradient(700px 420px at 100% 110%,color-mix(in srgb,var(--ac) 12%,transparent),transparent 65%);background-attachment:fixed}
+main{border-radius:26px;background:linear-gradient(155deg,color-mix(in srgb,var(--card),#fff 8%),var(--card) 72%);box-shadow:0 30px 80px rgba(0,0,0,.25);padding:26px}
+h1{font-weight:500;letter-spacing:-.02em}
+input{border-radius:12px}
+button.p,button#go,button{border-radius:999px;background:var(--grad);color:#fff;font-weight:500}
+button.l{background:none;color:var(--ac)}
 </style></head><body><main>
 <h1>Mon budget</h1>
 <section id="v1"><p>Connecte-toi à ton profil.</p>

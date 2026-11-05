@@ -90,15 +90,79 @@ main{max-width:1800px;padding:24px 40px}
 }
 .r.off{opacity:.45}
 .sub input[data-p$=".t"]{width:96px!important}
-</style></head><body><main>
-<h1>Mon budget mensuel <small id="evt" style="font-size:14px;font-weight:600;color:var(--ac)"></small></h1>
-<div class="top"><span id="who"></span><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span></div>
-<p class="note" id="st" style="margin:0 0 10px"></p>
-<div class="sum" id="sum"></div>
+/* ===== Refonte « Helios » : verre fumé, dégradé mauve, barre latérale ===== */
+:root{--bg:#efe6ee;--card:#ffffff;--tx:#241a23;--mu:#7d6f7c;--ac:#9a5a95;--act:#ffffff;--bd:rgba(70,35,68,.13);--in:#f6eff5;--ok:#0e7c5a;--bad:#c2331f;--side:#ffffff;--frame:rgba(255,255,255,.55);--shadow:0 18px 50px rgba(70,35,68,.13);--grad:linear-gradient(120deg,color-mix(in srgb,var(--ac) 40%,#000),color-mix(in srgb,var(--ac) 84%,#000));color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0a0e;--card:#181319;--tx:#f5eef4;--mu:#a99ca8;--ac:#cf9fca;--act:#ffffff;--bd:rgba(255,255,255,.09);--in:rgba(255,255,255,.05);--ok:#5ed592;--bad:#ff8f7e;--side:#070508;--frame:rgba(255,255,255,.045);--shadow:0 30px 80px rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d0a0e;--card:#181319;--tx:#f5eef4;--mu:#a99ca8;--ac:#cf9fca;--act:#ffffff;--bd:rgba(255,255,255,.09);--in:rgba(255,255,255,.05);--ok:#5ed592;--bad:#ff8f7e;--side:#070508;--frame:rgba(255,255,255,.045);--shadow:0 30px 80px rgba(0,0,0,.5);color-scheme:dark}
+body{font-family:"Outfit","Urbanist","Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);background-image:radial-gradient(900px 520px at 12% -8%,color-mix(in srgb,var(--ac) 18%,transparent),transparent 65%),radial-gradient(800px 480px at 105% 105%,color-mix(in srgb,var(--ac) 12%,transparent),transparent 65%);background-attachment:fixed;min-height:100vh}
+.app{max-width:1800px;margin:0 auto;padding:6px}
+.side{display:none}
+.hd2{display:flex;justify-content:space-between;align-items:center;gap:12px 20px;flex-wrap:wrap;margin:6px 0 14px}
+.welcome h1{font-size:clamp(25px,3.4vw,36px);font-weight:500;letter-spacing:-.02em;margin:0;line-height:1.1}
+.welcome h1 .pk{color:var(--ac)}
+.subt{color:var(--mu);font-size:14px;margin:6px 0 0}.subt b{color:var(--tx);font-weight:500}
+.hr{display:flex;align-items:center;gap:14px}
+.who{display:inline-flex;align-items:center;gap:10px}
+.wn{display:flex;flex-direction:column;line-height:1.2}.wn b{font-size:15px;font-weight:500}.wn small{color:var(--mu);font-size:12px}
+.icb{width:44px;height:44px;border-radius:50%;background:linear-gradient(155deg,color-mix(in srgb,var(--card),#fff 9%),var(--card));border:1px solid var(--bd);color:var(--tx)}
+.icb.on{background:var(--grad);color:#fff;border-color:transparent}
+.k,.box{background:linear-gradient(155deg,color-mix(in srgb,var(--card),#fff 8%) 0%,var(--card) 72%);border:1px solid var(--bd);border-radius:24px;box-shadow:var(--shadow)}
+.k{position:relative;overflow:hidden;padding:18px 20px}
+.k::after{content:"";position:absolute;right:-34px;top:-46px;width:150px;height:150px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--ac) 30%,transparent),transparent);pointer-events:none}
+.k small{color:var(--mu);font-size:14px}
+.k b{display:block;font-size:clamp(22px,2.7vw,32px);font-weight:500;margin-top:6px;letter-spacing:-.02em}
+.sum{gap:12px;margin-bottom:16px}
+.box{padding:18px 20px;margin-bottom:16px}
+.box h2{font-size:18px;font-weight:500;margin:0 0 12px;letter-spacing:-.01em}
+.r input,.fg input,.sub input{border-radius:12px;background:var(--in);border-color:var(--bd);color:var(--tx)}
+.btn{border-radius:999px;background:var(--grad);color:#fff;padding:11px 20px;font-weight:500}
+.btn.g{background:transparent;color:var(--tx);border:1px solid color-mix(in srgb,var(--tx) 32%,transparent)}
+.btn.d{background:var(--bad);color:#fff}
+.add{border:1px solid color-mix(in srgb,var(--tx) 30%,transparent);border-radius:999px;padding:8px 16px;color:var(--tx);font-weight:500;background:transparent;margin-top:6px}
+.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px;margin-bottom:14px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;border-radius:999px;padding:11px 22px;background:color-mix(in srgb,var(--bg),#000 28%);border:1px solid color-mix(in srgb,var(--tx) 30%,transparent);color:var(--tx);font-weight:500}
+.tabs button.on{background:var(--grad);border-color:transparent;color:#fff}
+.box .tabs{flex-wrap:wrap;overflow:visible}
+.bar{height:8px;border-radius:99px;background:var(--in)}
+.bar i{background:var(--grad);border-radius:99px}.bar i.over{background:var(--bad)}
+.logo{width:36px;height:36px;border-radius:12px;background:var(--grad);display:grid;place-items:center}
+.logo svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:500;padding:4px 10px 28px}
+.navl{display:flex;flex-direction:column;gap:6px}.navl.bottom{margin-top:auto}
+.nv{display:flex;align-items:center;gap:14px;width:100%;padding:13px 16px;border:1px solid transparent;border-radius:15px;background:transparent;color:var(--tx);font:inherit;font-size:16px;text-align:left;cursor:pointer}
+.nv svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;opacity:.85}
+.nv:hover{background:color-mix(in srgb,var(--tx) 7%,transparent)}
+.nv.on{background:linear-gradient(90deg,color-mix(in srgb,var(--ac) 55%,transparent),color-mix(in srgb,var(--ac) 6%,transparent));border-color:color-mix(in srgb,var(--ac) 32%,transparent)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--mu);font-size:11px}.chart .vl{fill:var(--tx);font-size:12px;font-weight:500}
+.chart .gl{stroke:var(--bd)}
+.chart .ln{fill:none;stroke:var(--ac);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.chart .dot{fill:var(--ac);stroke:var(--card);stroke-width:2}
+@media(min-width:900px){
+.app{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;width:min(1800px,calc(100% - 44px));margin:22px auto;padding:16px;border-radius:32px;background:var(--frame);border:1px solid var(--bd);box-shadow:var(--shadow)}
+.side{display:flex;flex-direction:column;background:var(--side);border:1px solid var(--bd);border-radius:24px;padding:22px 14px;position:sticky;top:22px;height:calc(100vh - 88px);align-self:start}
+#tabs,.hr .ic{display:none}
+main{max-width:none;margin:0;padding:6px 8px 30px}
+}
+</style></head><body><div class="app">
+<aside class="side">
+<div class="brand"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></span><span>Budget</span></div>
+<nav class="navl" id="nav"></nav>
+<nav class="navl bottom" id="navb"></nav>
+</aside>
+<main>
+<header class="hd2">
+<div class="welcome"><h1>Bonjour, <span class="pk" id="hname"></span> <small id="evt" style="font-size:14px;font-weight:600;color:var(--ac)"></small></h1><p class="subt">Voici le résumé de ton budget de <b id="mois"></b></p></div>
+<div class="hr"><span class="ic"><button type="button" class="icb" id="gear" title="Paramètres" aria-label="Paramètres"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><button type="button" class="icb" id="out" title="Se déconnecter" aria-label="Se déconnecter"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></span><span id="who" class="who"></span></div>
+</header>
+<p class="note" id="st" style="margin:0 0 12px"></p>
 <div class="tabs" id="tabs"></div>
+<div class="sum" id="sum"></div>
 <div id="view"></div>
 <button class="rst" id="exp">Exporter une sauvegarde</button> <button class="rst" id="rst">Réinitialiser les données</button>
 </main>
+</div>
 <div id="fx" aria-hidden="true"></div>
 <div id="toast"></div>
 <script>
@@ -211,6 +275,16 @@ const cdBox=()=>{const key=ymKey(new Date()),on=x=>inWin(x[4],key),A=S.cd.filter
   S.cd.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0),paid=v[3]===key;
     h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois"><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.1" value="${v[1]||0}"><input type="number" step="0.01" inputmode="decimal" data-n data-p="cd.${i}.2" value="${v[2]||0}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
   return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div><div class="tot" style="${st}"><span>Déjà passé ce mois</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>Reste à passer</span><span>${f(rest)}</span></div></div>`};
+const NAVI={fixes:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',prev:'<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',com:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',proj:'<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',cre:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',epa:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'};
+const NAVSET='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',NAVOUT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+const chartBox=pts=>{const W=600,H=240,pl=46,pr=14,pt=30,pb=30,vals=pts.map(p=>p[2]),mn=Math.min(0,...vals),mx=Math.max(0,...vals),rg=(mx-mn)||1;
+  const X=i=>pl+(W-pl-pr)*(pts.length>1?i/(pts.length-1):.5),Y=v=>pt+(H-pt-pb)*(1-(v-mn)/rg),fx=n=>n.toFixed(1);
+  const line=pts.map((p,i)=>(i?'L':'M')+fx(X(i))+','+fx(Y(p[2]))).join(' ');
+  const area=line+' L'+fx(X(pts.length-1))+','+fx(Y(mn))+' L'+fx(X(0))+','+fx(Y(mn))+' Z';
+  const ticks=[mn,(mn+mx)/2,mx].map(v=>`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${fx(Y(v))}" y2="${fx(Y(v))}"/><text x="${pl-8}" y="${fx(Y(v)+4)}" text-anchor="end">${Math.round(v)}</text>`).join('');
+  const dots=pts.map((p,i)=>`<circle class="dot" cx="${fx(X(i))}" cy="${fx(Y(p[2]))}" r="5"/><text x="${fx(X(i))}" y="${H-8}" text-anchor="middle">${esc(p[0])}</text>`).join('');
+  const last=pts[pts.length-1];
+  return `<div class="box"><h2>Évolution du reste cumulé</h2><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reste cumulé sur 6 mois"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ac);stop-opacity:.5"/><stop offset="1" style="stop-color:var(--ac);stop-opacity:0"/></linearGradient></defs>${ticks}<path d="${area}" fill="url(#cg)"/><path class="ln" d="${line}"/>${dots}<text class="vl" x="${fx(Math.min(X(pts.length-1),W-pr-30))}" y="${fx(Y(last[2])-12)}" text-anchor="middle">${esc(f(last[2]))}</text></svg></div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -224,6 +298,8 @@ function render(){
   <div class="k"><small>Reste prévu</small><b class="${cl(rp)}">${f(rp)}</b></div>
   <div class="k"><small>Reste réel</small><b class="${cl(rr)}">${f(rr)}</b></div>`;
   $('#tabs').innerHTML=TABS.map(t=>`<button data-tab="${t[0]}" class="${tab==t[0]?'on':''}">${t[1]}</button>`).join('');
+  $('#nav').innerHTML=TABS.map(t=>`<button class="nv${tab==t[0]?' on':''}" data-tab="${t[0]}">${NAVI[t[0]]}<span>${t[1]}</span></button>`).join('');
+  $('#navb').innerHTML=`<button class="nv${tab=='set'?' on':''}" data-nav="set">${NAVSET}<span>Paramètres</span></button><button class="nv" data-nav="out">${NAVOUT}<span>Déconnexion</span></button>`;
   let h='';
   if(tab=='fixes')h=list('revenus','Revenus','Salaire, aides (CAF…), pensions… Mets une date de fin pour une aide limitée dans le temps.')+list('fixes','Charges fixes','Ce qui part chaque mois, quoi qu’il arrive.')+cal();
   if(tab=='prev'){
@@ -240,16 +316,17 @@ function render(){
     (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
   }
   if(tab=='proj'){
-    const d=new Date();let y=d.getFullYear(),m=d.getMonth(),cum=0;
+    const d=new Date();let y=d.getFullYear(),m=d.getMonth(),cum=0,pts=[];
     h='<div class="box"><h2>6 prochains mois</h2><p class="note">Revenu − fixes encore actives − variables prévus. Une date de fin sur une ligne fixe (ex. l’impôt) la retire des mois suivants.</p>';
     for(let n=0;n<6;n++){
       const key=y+'-'+String(m+1).padStart(2,'0');
       const f2=sum(actv(S.fixes,key));
-      const r=sum(actv(S.revenus,key))-f2-vp;cum+=r;
+      const r=sum(actv(S.revenus,key))-f2-vp;cum+=r;pts.push([new Date(y,m,1).toLocaleDateString('fr-FR',{month:'short'}).replace('.',''),r,cum]);
       h+=`<div class="tot" style="border:0;margin:0 0 6px;padding:0;font-weight:400"><span>${new Date(y,m,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}<small style="color:var(--mu)"> · fixes ${f(f2)}</small></span><span class="${cl(r)}">${f(r)}</span></div>`;
       m++;if(m>11){m=0;y++}
     }
     h+=`<div class="tot"><span>Cumul sur 6 mois</span><span class="${cl(cum)}">${f(cum)}</span></div></div>`;
+    h=chartBox(pts)+h;
   }
   if(tab=='cre')h=crd();
   if(tab=='epa')h=gl();
@@ -261,8 +338,10 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
   const m=/^(fixes|cd)\.(\d+)\.[45]\.(t|n)$/.exec(t.dataset.p);
   if(m){const x=S[m[1]][+m[2]],v=x[m[1]==='cd'?4:5];if(v&&+v.t>0&&+v.n>0)x[1]=Math.round(v.t/v.n*100)/100}
   save();render()});
-document.addEventListener('click',e=>{const t=e.target;
-  if(t.dataset.tab){tab=t.dataset.tab;render()}
+document.addEventListener('click',e=>{const t=(e.target.closest&&e.target.closest('[data-tab],[data-nav]'))||e.target;
+  if(t.dataset.nav==='set'){$('#gear').click()}
+  else if(t.dataset.nav==='out'){$('#out').click()}
+  else if(t.dataset.tab){tab=t.dataset.tab;render()}
   else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:k=='cd'?["",0,0]:["",0]);save();render()}
   else if(t.dataset.end){showEnd.add(t.dataset.end);render()}
   else if(t.dataset.noend){const[k,i]=t.dataset.noend.split('.');S[k][+i][2]='';showEnd.delete(t.dataset.noend);save();render()}
@@ -352,7 +431,7 @@ function applyPrefs(){const r=document.documentElement,sn=seasonNow();
   const fk=(sn?sn.id:'')+'|'+animOn;if(fk!==fxKey){fxKey=fk;buildFx(sn)}}
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyPrefs);
 const av=(u,z)=>u.avatar?`<img src="${u.avatar}" alt="" style="width:${z}px;height:${z}px;border-radius:50%;object-fit:cover;display:block">`:`<span style="width:${z}px;height:${z}px;border-radius:50%;background:var(--ac);color:var(--act);display:inline-grid;place-items:center;font-weight:700;font-size:${Math.round(z*.45)}px">${esc(((u.name||'?')[0]||'?').toUpperCase())}</span>`;
-const hdr=()=>{$('#who').innerHTML=`<span style="display:inline-flex;align-items:center;gap:8px;vertical-align:middle">${av(me,28)}<b>${esc(me.name)}</b></span>`};
+const hdr=()=>{$('#who').innerHTML=`${av(me,42)}<span class="wn"><b>${esc(me.name)}</b><small>${me.owner?'Administrateur':'Membre'}</small></span>`;$('#hname').textContent=me.name;$('#mois').textContent=new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})};
 const toast=(t,ok)=>{const e=$('#toast');e.textContent=t;e.className=ok?'ok':'bad';e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>{e.style.display='none'},3500)};
 const val=id=>{const e=document.getElementById(id);return e?e.value:''};
 const api=async(m,u,b)=>{const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
