@@ -147,6 +147,14 @@ main{max-width:none;margin:0;padding:6px 8px 30px}
 }
 .r input[data-calc]{flex:none!important;width:92px!important;text-align:right}
 .sub input[id^="qa-"]{width:100px!important}
+.modal{position:fixed;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(5,3,8,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal.open{display:flex}
+.mbox{width:min(480px,100%);max-height:92vh;overflow:auto;border-radius:26px;padding:22px;background:linear-gradient(155deg,color-mix(in srgb,var(--card),#fff 8%),var(--card) 72%);border:1px solid var(--bd);box-shadow:var(--shadow);animation:enter .22s ease-out}
+.mbox h2{font-size:20px;font-weight:500;margin:0 0 14px}
+.mck{display:flex;gap:10px;align-items:center;margin:12px 0 4px;font-size:15px;color:var(--tx);cursor:pointer}
+.mck input{width:19px;height:19px;margin:0;accent-color:var(--ac)}
+.mbox .fg{margin:6px 0}.mbox .u{margin-top:18px}
+@media(max-width:600px){.modal{align-items:flex-end;padding:0}.mbox{border-radius:26px 26px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}}
 </style></head><body><div class="app">
 <aside class="side">
 <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></span><span>Budget</span></div>
@@ -166,6 +174,7 @@ main{max-width:none;margin:0;padding:6px 8px 30px}
 </main>
 </div>
 <div id="fx" aria-hidden="true"></div>
+<div class="modal" id="modal"><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mtitle"><h2 id="mtitle"></h2><div id="mbody"></div><div class="u"><button type="button" class="btn" id="mok">Ajouter</button><button type="button" class="btn g" id="mno">Annuler</button></div></div></div>
 <div id="toast"></div>
 <script>
 const K='budget-v1';
@@ -361,6 +370,7 @@ document.addEventListener('click',e=>{const t=(e.target.closest&&e.target.closes
   if(t.dataset.nav==='set'){$('#gear').click()}
   else if(t.dataset.nav==='out'){$('#out').click()}
   else if(t.dataset.tab){tab=t.dataset.tab;render()}
+  else if(t.dataset.add&&MODAL.includes(t.dataset.add)){openModal(t.dataset.add)}
   else if(t.dataset.add){const k=t.dataset.add;S[k].push(k=='vars'?["",0,0]:k=='credits'?{n:'',cap:0,rate:0,dur:0,start:'',ins:0,pay:0,ex:0}:k=='goals'?{n:'',target:0,saved:0,month:0}:k=='divers'?["",0,ymd(new Date())]:k=='cd'?["",0,0]:["",0]);save();render()}
   else if(t.dataset.end){showEnd.add(t.dataset.end);render()}
   else if(t.dataset.noend){const[k,i]=t.dataset.noend.split('.');S[k][+i][2]='';showEnd.delete(t.dataset.noend);save();render()}
@@ -492,7 +502,7 @@ async function openSettings(){tab='set';render();
   catch(e){$('#view').innerHTML='<p class="note">Impossible de charger les paramètres.</p>';return}
   $('#view').innerHTML=setHTML()}
 async function act(a,v){
-  if(a==='fixnew'){addFix=v;render();setTimeout(()=>{const e=document.getElementById('nfn');if(e)e.focus()},0);return}
+  if(a==='fixnew')return openModal(v);
   if(a==='fixno'){addFix=null;render();return}
   if(a==='fixok'){const n=val('nfn').trim(),m=parseFloat(val('nfa'))||0,d=parseInt(val('nfd'),10)||'',e=document.getElementById('nfc').checked?val('nfe'):'';
     if(!n&&!m)return toast('Indique au moins un libellé ou un montant.');
@@ -538,6 +548,51 @@ document.addEventListener('change',e=>{const t=e.target;
     save();render()}
   if(t.id==='animchk'){animOn=t.checked;try{localStorage.setItem('budget-anim',animOn?'1':'0')}catch(x){}document.documentElement.classList.toggle('noanim',!animOn);applyPrefs()}
   if(t.id==='nfc'){const w=document.getElementById('nfew');if(w)w.style.display=t.checked?'':'none'}});
+const MODAL=['cd','fixes','revenus','divers','vars','ca'];
+const MT={cd:'Nouvelle dépense commune',fixes:'Nouvelle charge fixe',revenus:'Nouveau revenu',divers:'Nouvelle dépense diverse',vars:'Nouveau poste de budget',ca:'Nouvel apport'};
+const MPH={cd:'Ex. Courses communes',fixes:'Ex. Assurance habitation',revenus:'Ex. Allocation CAF',divers:'Ex. Cadeau',vars:'Ex. Loisirs',ca:'Ex. Marie'};
+let modalK=null;
+const mv=id=>{const e=document.getElementById(id);return e?e.value:''},mc=id=>{const e=document.getElementById(id);return !!(e&&e.checked)};
+function openModal(k){modalK=k;
+  const fl=(id,l,t,ex)=>`<label>${l}<input id="${id}" type="${t||'text'}" ${ex||''}></label>`,
+    am=(id,l)=>fl(id,l,'text','inputmode="decimal" placeholder="0" autocomplete="off"'),
+    ck=(id,l)=>`<label class="mck"><input type="checkbox" id="${id}"> ${l}</label>`,
+    day=fl('m-d','Jour du mois','number','min="1" max="31" inputmode="numeric" placeholder="1 à 31"');
+  const multi=ck('m-m','Paiement en plusieurs fois')+`<div id="m-mw" style="display:none"><div class="fg">${am('m-mt','Total (€)')}${fl('m-mn','En … fois','number','min="2" max="60" value="3" inputmode="numeric"')}${fl('m-ms','Dès le mois','month','value="'+ymKey(new Date())+'"')}</div><p class="note">Le montant par échéance se calcule : total ÷ nombre de fois.</p></div>`;
+  const endd=ck('m-e','Date de fin')+`<div id="m-ew" style="display:none"><div class="fg">${fl('m-ef','Mois de fin','month')}</div></div>`;
+  const name=`<div class="fg">${fl('m-l','Libellé','text','autocomplete="off" placeholder="'+MPH[k]+'"')}</div>`;
+  const B={
+    cd:name+`<div class="fg">${am('m-a','Prévu (€)')}${am('m-r','Réel déjà dépensé (€)')}</div>`+ck('m-p','Déjà passé ce mois')+multi,
+    fixes:name+`<div class="fg">${am('m-a','Montant (€)')}${day}</div>`+ck('m-p','Déjà passé ce mois')+multi+endd,
+    revenus:name+`<div class="fg">${am('m-a','Montant (€)')}${day}</div>`+ck('m-p','Déjà reçu ce mois')+endd,
+    divers:name+`<div class="fg">${am('m-a','Montant (€)')}${fl('m-dt','Date','date','value="'+ymd(new Date())+'"')}</div>`,
+    vars:name+`<div class="fg">${am('m-a','Prévu (€)')}${am('m-r','Réel (€)')}</div>`,
+    ca:name+`<div class="fg">${am('m-a','Montant (€)')}</div>`};
+  $('#mtitle').textContent=MT[k];$('#mbody').innerHTML=B[k];$('#modal').classList.add('open');
+  setTimeout(()=>{const e=document.getElementById('m-l');if(e)e.focus()},30)}
+function closeModal(){$('#modal').classList.remove('open');modalK=null}
+function submitModal(){const k=modalK;if(!k)return;
+  const key=ymKey(new Date()),nm=mv('m-l').trim(),pn=id=>{const r=calc(mv(id),0);return r===null?NaN:r},a=pn('m-a'),r=pn('m-r');
+  if(isNaN(a)||isNaN(r))return toast('Montant invalide.');
+  let inst=null,amt=a;
+  if(mc('m-m')){const t=pn('m-mt'),n=parseInt(mv('m-mn'),10);
+    if(!(t>0)||!(n>=2))return toast('Indique le total et le nombre de fois (2 minimum).');
+    inst={t,n,s:mv('m-ms')||key};amt=Math.round(t/n*100)/100}
+  const d=parseInt(mv('m-d'),10)||'';
+  if(d!==''&&(d<1||d>31))return toast('Le jour doit être entre 1 et 31.');
+  if(!nm&&!amt&&!r)return toast('Indique au moins un libellé ou un montant.');
+  let row;
+  if(k==='fixes'||k==='revenus'){row=[nm,amt,mc('m-e')?mv('m-ef'):'',d,mc('m-p')?key:''];if(inst)row[5]=inst}
+  else if(k==='cd'){row=[nm,amt,r,mc('m-p')?key:''];if(inst)row[4]=inst}
+  else if(k==='divers')row=[nm,amt,mv('m-dt')||ymd(new Date())];
+  else if(k==='vars')row=[nm,amt,r];
+  else row=[nm,amt];
+  S[k].push(row);save();render();closeModal();toast('Ajouté.',1)}
+document.addEventListener('click',e=>{const id=e.target.id;if(id==='modal'||id==='mno')closeModal();else if(id==='mok')submitModal()});
+document.addEventListener('keydown',e=>{if(!modalK)return;if(e.key==='Escape')closeModal();else if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){e.preventDefault();submitModal()}});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='m-m'){const w=document.getElementById('m-mw');if(w)w.style.display=t.checked?'':'none'}
+  if(t.id==='m-e'){const w=document.getElementById('m-ew');if(w)w.style.display=t.checked?'':'none'}});
 document.addEventListener('keydown',e=>{const id=e.target&&e.target.id||'';if(e.key==='Enter'&&id.indexOf('qa-')===0){const q=id.split('-');act('qadd',q[1]+'.'+q[2])}});
 $('#gear').onclick=e=>{e.preventDefault();openSettings()};
 $('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
