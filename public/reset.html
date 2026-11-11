@@ -25,11 +25,16 @@ h1{font-weight:500;letter-spacing:-.02em}
 input{border-radius:12px}
 button.p,button#go,button{border-radius:999px;background:var(--grad);color:#fff;font-weight:500}
 button.l{background:none;color:var(--ac)}
+.pw{position:relative;display:block}
+.pw input{padding-right:46px!important}
+.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--mu);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:none}
+.pw .eye:hover{color:var(--tx)}
+.pw .eye svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style></head><body><main>
 <h1>Nouveau mot de passe</h1>
 <section id="f"><p>Choisis un mot de passe d’au moins 8 caractères.</p>
-<label>Nouveau mot de passe<input id="a" type="password" autocomplete="new-password" autofocus></label>
-<label>Confirmation<input id="b" type="password" autocomplete="new-password"></label>
+<label>Nouveau mot de passe<span class="pw"><input id="a" type="password" autocomplete="new-password" autofocus><button type="button" class="eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
+<label>Confirmation<span class="pw"><input id="b" type="password" autocomplete="new-password"><button type="button" class="eye" aria-label="Afficher le mot de passe" title="Afficher le mot de passe"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></span></label>
 <div id="msg"></div>
 <button id="go">Enregistrer</button></section>
 <section id="d" hidden><p>Mot de passe modifié. <a href="login.html">Se connecter</a></p></section>
@@ -51,4 +56,6 @@ async function go(){
 }
 $('go').onclick=go;
 document.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+const ON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+document.querySelectorAll('.eye').forEach(b=>{b.addEventListener('mousedown',e=>e.preventDefault());b.addEventListener('click',()=>{const i=b.parentNode.querySelector('input'),show=i.type==='password';i.type=show?'text':'password';b.innerHTML=show?OFF:ON;const l=show?'Masquer le mot de passe':'Afficher le mot de passe';b.setAttribute('aria-label',l);b.setAttribute('title',l);i.focus()})});
 </script></body></html>

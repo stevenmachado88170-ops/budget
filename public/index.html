@@ -155,6 +155,11 @@ main{max-width:none;margin:0;padding:6px 8px 30px}
 .mck input{width:19px;height:19px;margin:0;accent-color:var(--ac)}
 .mbox .fg{margin:6px 0}.mbox .u{margin-top:18px}
 @media(max-width:600px){.modal{align-items:flex-end;padding:0}.mbox{border-radius:26px 26px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}}
+.pw{position:relative;display:block}
+.pw input{padding-right:46px!important}
+.pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--mu);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:none}
+.pw .eye:hover{color:var(--tx)}
+.pw .eye svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style></head><body><div class="app">
 <aside class="side">
 <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></span><span>Budget</span></div>
@@ -477,7 +482,8 @@ async function profile(b){const r=await api('PUT','api/profile',b);
 const setHTML=()=>{
   const u=cfg.me,adm=u.admin,m=cfg.smtp;
   const box=(t,b)=>`<div class="box"><h2>${t}</h2>${b}</div>`;
-  const inp=(id,l,v,t,ex)=>`<label>${l}<input id="${id}" type="${t||'text'}" value="${esc(v==null?'':v)}" ${ex||''}></label>`;
+  const inp=(id,l,v,t,ex)=>{const i=`<input id="${id}" type="${t||'text'}" value="${esc(v==null?'':v)}" ${ex||''}>`;
+    return `<label>${l}${t==='password'?`<span class="pw">${i}<button type="button" class="eye" data-eye aria-label="Afficher le mot de passe" title="Afficher le mot de passe">${EYE_ON}</button></span>`:i}</label>`};
   const mini='style="padding:6px 10px;font-size:13px"';
   let h=box('Profil',`<div class="u" style="margin-bottom:10px">${av(u,56)}<button class="btn g" data-a="photo">Choisir une photo</button>${u.avatar?'<button class="btn g" data-a="nophoto">Retirer</button>':''}<input type="file" id="pf" accept="image/*" hidden></div>
     <div class="fg">${inp('pn','Nom affiché',u.name)}${inp('pe','E-mail (récupération du mot de passe)',u.email,'email','autocomplete="email"')}</div>
@@ -593,6 +599,11 @@ document.addEventListener('keydown',e=>{if(!modalK)return;if(e.key==='Escape')cl
 document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='m-m'){const w=document.getElementById('m-mw');if(w)w.style.display=t.checked?'':'none'}
   if(t.id==='m-e'){const w=document.getElementById('m-ew');if(w)w.style.display=t.checked?'':'none'}});
+const EYE_ON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',EYE_OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('[data-eye]'))e.preventDefault()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-eye]');if(!b)return;
+  const i=b.parentNode.querySelector('input'),show=i.type==='password';i.type=show?'text':'password';
+  b.innerHTML=show?EYE_OFF:EYE_ON;const l=show?'Masquer le mot de passe':'Afficher le mot de passe';b.setAttribute('aria-label',l);b.setAttribute('title',l);i.focus()});
 document.addEventListener('keydown',e=>{const id=e.target&&e.target.id||'';if(e.key==='Enter'&&id.indexOf('qa-')===0){const q=id.split('-');act('qadd',q[1]+'.'+q[2])}});
 $('#gear').onclick=e=>{e.preventDefault();openSettings()};
 $('#out').onclick=e=>{e.preventDefault();fetch('api/logout',{method:'POST'}).finally(()=>{location.href='login.html'})};
