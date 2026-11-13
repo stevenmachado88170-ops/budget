@@ -160,6 +160,7 @@ main{max-width:none;margin:0;padding:6px 8px 30px}
 .pw .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--mu);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:none}
 .pw .eye:hover{color:var(--tx)}
 .pw .eye svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k .sd{display:block;font-size:12px;color:var(--mu);margin-top:6px}
 </style></head><body><div class="app">
 <aside class="side">
 <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></span><span>Budget</span></div>
@@ -301,6 +302,9 @@ const chartBox=pts=>{const W=600,H=240,pl=46,pr=14,pt=30,pb=30,vals=pts.map(p=>p
   const dots=pts.map((p,i)=>`<circle class="dot" cx="${fx(X(i))}" cy="${fx(Y(p[2]))}" r="5"/><text x="${fx(X(i))}" y="${H-8}" text-anchor="middle">${esc(p[0])}</text>`).join('');
   const last=pts[pts.length-1];
   return `<div class="box"><h2>Évolution du reste cumulé</h2><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reste cumulé sur 6 mois"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ac);stop-opacity:.5"/><stop offset="1" style="stop-color:var(--ac);stop-opacity:0"/></linearGradient></defs>${ticks}<path d="${area}" fill="url(#cg)"/><path class="ln" d="${line}"/>${dots}<text class="vl" x="${fx(Math.min(X(pts.length-1),W-pr-30))}" y="${fx(Y(last[2])-12)}" text-anchor="middle">${esc(f(last[2]))}</text></svg></div>`};
+const bilanBox=(inc,fx,vp,vr,st0)=>{const L=(a,b,c,w)=>`<div class="tot" style="margin:${w?'8px':'0'} 0 0;padding:${w?'8px':'0'} 0 0;${w?'':'border:0;'}font-weight:${w?600:400}"><span>${a}</span><span class="${c||''}">${b}</span></div>`,
+    tp=fx+vp,ep=st0+inc-tp,er=st0+inc-fx-vr;
+  return `<div class="box"><h2>Bilan du mois</h2>`+(st0?L('Solde au 1er du mois',f(st0)):'')+L('Revenus du mois','+ '+f(inc))+L('Charges fixes','− '+f(fx))+L('Budgets variables prévus','− '+f(vp))+L('Total prévu des dépenses',f(tp),'',1)+L('Reste prévu en fin de mois',f(ep),cl(ep),1)+L('Avec les dépenses réelles ('+f(vr)+' de variables)',f(er),cl(er))+`</div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -308,11 +312,11 @@ function render(){
   if(tab!==lastTab){lastTab=tab;const vw=$('#view');vw.classList.remove('enter');void vw.offsetWidth;vw.classList.add('enter')}
   syncDiv();
   const key=ymKey(new Date()),fx=sum(actv(S.fixes,key)),inc=sum(actv(S.revenus,key)),vp=sum(S.vars,1),vr=sum(S.vars,2);
-  const rp=inc-fx-vp,rr=inc-fx-vr;
+  const rp=inc-fx-vp,rr=inc-fx-vr,st0=+S.start||0,totP=fx+vp,endP=rp+st0,endR=rr+st0;
   $('#sum').innerHTML=`<div class="k"><small>Revenus du mois</small><b>${f(inc)}</b></div>
-  <div class="k"><small>Charges fixes</small><b>${f(fx)}</b></div>
-  <div class="k"><small>Reste prévu</small><b class="${cl(rp)}">${f(rp)}</b></div>
-  <div class="k"><small>Reste réel</small><b class="${cl(rr)}">${f(rr)}</b></div>`;
+  <div class="k"><small>Total prévu</small><b>${f(totP)}</b><span class="sd">dont fixes ${f(fx)} · variables ${f(vp)}</span></div>
+  <div class="k"><small>Reste prévu en fin de mois</small><b class="${cl(endP)}">${f(endP)}</b><span class="sd">${st0?'solde de départ inclus':'revenus − total prévu'}</span></div>
+  <div class="k"><small>Reste réel</small><b class="${cl(endR)}">${f(endR)}</b><span class="sd">avec les dépenses réelles</span></div>`;
   $('#tabs').innerHTML=TABS.map(t=>`<button data-tab="${t[0]}" class="${tab==t[0]?'on':''}">${t[1]}</button>`).join('');
   $('#nav').innerHTML=TABS.map(t=>`<button class="nv${tab==t[0]?' on':''}" data-tab="${t[0]}">${NAVI[t[0]]}<span>${t[1]}</span></button>`).join('');
   $('#navb').innerHTML=`<button class="nv${tab=='set'?' on':''}" data-nav="set">${NAVSET}<span>Paramètres</span></button><button class="nv" data-nav="out">${NAVOUT}<span>Déconnexion</span></button>`;
@@ -323,7 +327,7 @@ function render(){
     S.vars.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
       h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="vars.${i}.1" value="${v[1]}"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="vars.${i}.2" value="${v[2]}"${/^divers/i.test(v[0])?' readonly title="Calculé depuis Dépenses diverses"':''}><button data-del="vars.${i}" aria-label="Supprimer">×</button>${/^divers/i.test(v[0])?'':qa('vars',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
     h+=`<button class="add" data-add="vars">+ Ajouter un poste</button><div class="tot"><span>Prévu / réel</span><span>${f(vp)} / ${f(vr)}</span></div></div>${dvBox()}
-    <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div><div class="box"><h2>Bilan du mois</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Revenu − fixes − variables prévus</span><span class="${cl(rp)}">${f(rp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Avec les dépenses réelles</span><span class="${cl(rr)}">${f(rr)}</span></div></div>`;
+    <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div>${bilanBox(inc,fx,vp,vr,st0)}`;
   }
   if(tab=='com'){
     const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=sum(cdA,2),sp=a-dp,sr=a-dr;
