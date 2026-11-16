@@ -161,6 +161,23 @@ main{max-width:none;margin:0;padding:6px 8px 30px}
 .pw .eye:hover{color:var(--tx)}
 .pw .eye svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .k .sd{display:block;font-size:12px;color:var(--mu);margin-top:6px}
+.cmph,.cmpr{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.3fr;gap:8px;align-items:baseline}
+.cmph{font-size:12px;color:var(--mu);padding-bottom:6px;text-transform:capitalize}
+.cmpr{padding:9px 0;border-top:1px solid var(--bd);font-size:14px}.cmpr small{color:var(--mu)}
+.lgd{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mu);margin:0 0 6px}
+.lgd i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.lgd i.b0{background:color-mix(in srgb,var(--mu) 60%,transparent)}.lgd i.b1{background:var(--ac)}
+.chart .b0{fill:color-mix(in srgb,var(--mu) 60%,transparent)}.chart .b1{fill:var(--ac)}
+.donutw{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.donut{width:190px;height:190px;flex:none}.donut .dl{fill:var(--mu);font-size:11px}.donut .vl{fill:var(--tx);font-size:14px;font-weight:500}
+.lg{list-style:none;margin:0;padding:0;flex:1;min-width:180px}
+.lg li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:14px;border-top:1px solid var(--bd)}
+.lg li:first-child{border-top:0}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}.lg small{color:var(--mu)}
+.sub .tipb{width:24px;height:24px;border-radius:50%;border:1px solid color-mix(in srgb,var(--tx) 38%,transparent);background:transparent;color:var(--mu);font:italic 700 14px/1 Georgia,serif;display:grid;place-items:center;padding:0;cursor:pointer}
+.sub .tipb:hover{color:var(--tx);border-color:var(--ac)}
+.bub{flex-basis:100%;margin:2px 0 8px 24px;padding:11px 14px;border-radius:14px;background:color-mix(in srgb,var(--ac) 14%,var(--card));border:1px solid color-mix(in srgb,var(--ac) 38%,transparent);font-size:13px;animation:enter .18s ease-out}
+.bub b{display:block;font-weight:500;font-size:14px;margin-bottom:6px}
+.bub ul{list-style:none;margin:0;padding:0}.bub li{display:flex;justify-content:space-between;gap:12px;padding:2px 0}.bub small{color:var(--mu)}
 </style></head><body><div class="app">
 <aside class="side">
 <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 6.5A6.5 6.5 0 1 0 17 17.5"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="14" y2="14"/></svg></span><span>Budget</span></div>
@@ -195,6 +212,9 @@ const mig=()=>{let c=false;S.fixes.forEach(x=>{if(x[2]===undefined){x[2]='';c=tr
   S.revenus.forEach(x=>{if(x[2]===undefined){x[2]='';c=true}if(x[3]===undefined){x[3]='';c=true}});
   if(!Array.isArray(S.cd)){S.cd=[];c=true}
   S.cd.forEach(x=>{if(x[2]===undefined){x[2]=0;c=true}});
+  const d0=new Date(),key0=d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0');
+  if(S.cur!==key0){if(S.cur)S.vars.forEach(v=>{if(!/^divers/i.test(v[0]))v[2]=0});S.cur=key0;c=true}
+  S.cd.forEach(x=>{if(x[5]===undefined){x[5]=key0;c=true}});
   if(!S.divers){S.divers=[];c=true}
   if(!S.vars.some(x=>/^divers/i.test(x[0]))){S.vars.push(["Divers",0,0]);c=true}
   if(!S.credits){S.credits=[{n:"Hyundai",cap:0,rate:0,dur:0,start:"",ins:0,pay:334.33,ex:0}];c=true}
@@ -207,6 +227,7 @@ const actv=(a,key)=>a.filter(x=>(!x[2]||key<=x[2])&&inWin(x[5],key));
 const BLANK=sh=>({revenus:[],start:0,goals:[],credits:[],fixes:[],vars:[["Courses",0,0],["Restos / fast-food",0,0],["Shopping / loisirs",0,0]],ca:(sh&&sh.ca)||[],cd:(sh&&sh.cd)||[]});
 const st=t=>{const el=document.getElementById('st');if(el)el.textContent=t};
 const save=()=>{
+  snapUpdate();
   fetch('api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)})
     .then(r=>{if(r.status===401){location.href='login.html';throw 0}if(!r.ok)throw 0;return r.json()}).then(j=>{rev=j.rev;st('Synchronisé')})
     .catch(()=>st('Hors ligne : la dernière modification n’est peut-être pas enregistrée'))};
@@ -216,7 +237,7 @@ const f=n=>n.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
 const sum=(a,i=1)=>a.reduce((t,x)=>t+(+x[i]||0),0);
 const cl=n=>n>=0?'pos':'neg';
 let tab='fixes';
-const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne']];
+const TABS=[['fixes','Fixes'],['prev','Prévisionnel'],['com','Commun'],['proj','Projection'],['cre','Crédit'],['epa','Épargne'],['cmp','Comparatif']];
 
 const showEnd=new Set();
 const row=(k,i)=>`<div class="r${(k=='fixes'||k=='revenus')&&S[k][i][4]===ymKey(new Date())?' paid':''}${(k=='fixes'||k=='revenus')&&!actv([S[k][i]],ymKey(new Date())).length?' off':''}" data-row="${k}.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span>${(k=='fixes'||k=='revenus')?`<input type="checkbox" class="pd" data-paid="${k}.${i}" ${S[k][i][4]===ymKey(new Date())?'checked':''} title="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}" aria-label="${k=='fixes'?'Passé ce mois':'Reçu ce mois'}">`:''}<input data-p="${k}.${i}.0" value="${esc(S[k][i][0])}" placeholder="Libellé"><input type="text" inputmode="decimal" data-calc data-p="${k}.${i}.1" value="${S[k][i][1]}" title="Tape +100 pour ajouter, ou 64+100"><button data-del="${k}.${i}" aria-label="Supprimer">×</button>${(k=='fixes'||k=='revenus')?`<div class="sub"><label>Le <input type="number" min="1" max="31" inputmode="numeric" data-n data-p="${k}.${i}.3" value="${S[k][i][3]||''}" aria-label="Jour du mois"> du mois</label><label><input type="checkbox" data-endchk="${k}.${i}" ${(S[k][i][2]||showEnd.has(k+'.'+i))?'checked':''}> Date de fin</label>${(S[k][i][2]||showEnd.has(k+'.'+i))?`<input type="month" data-p="${k}.${i}.2" value="${S[k][i][2]||''}" aria-label="Date de fin">`:''}</div>`:''}${(k=='fixes')?instUI(k,i):''}${k=='divers'?`<div class="sub"><label>Date <input type="date" data-p="divers.${i}.2" value="${S[k][i][2]||''}"></label></div>`:''}</div>`;
@@ -286,25 +307,61 @@ const divMonth=()=>{const key=ymKey(new Date());return (S.divers||[]).reduce((t,
 const syncDiv=()=>{const dv=S.vars.find(x=>/^divers/i.test(x[0]));if(dv)dv[2]=Math.round(divMonth()*100)/100};
 const dvBox=()=>{const key=ymKey(new Date()),all=S.divers||[],idx=all.map((_,i)=>i).filter(i=>(all[i][2]||key).startsWith(key)),old=all.length-idx.length;
   return `<div class="box"><h2>Dépenses diverses</h2><p class="note">Achats ponctuels du mois (cadeaux, réparations, sorties…). Leur total alimente le poste « Divers » ci-dessus.</p>${idx.map(i=>row('divers',i)).join('')}<button class="add" data-add="divers">+ Ajouter une dépense</button><div class="tot"><span>Total du mois en cours</span><span>${f(divMonth())}</span></div>${old?`<p class="note" style="margin:8px 0 0">${old} dépense(s) des mois précédents conservée(s).</p>`:''}</div>`};
-const cdBox=()=>{const key=ymKey(new Date()),on=x=>inWin(x[4],key),A=S.cd.filter(on),P=sum(A,1),R=sum(A,2),
+const cdBox=()=>{const key=ymKey(new Date()),on=x=>inWin(x[4],key),A=S.cd.filter(on),P=sum(A,1),R=A.reduce((t,x)=>t+cdR(x,key),0),
     done=sum(A.filter(x=>x[3]===key),1),rest=sum(A.filter(x=>x[3]!==key),1),st='border:0;margin:3px 0 0;padding:0;font-weight:400;color:var(--mu)';
   let h='<div class="box"><h2>Dépenses communes</h2><p class="note">Loyer, énergie, courses communes… Fixe le prévu, saisis le réel, coche ce qui est passé. Astuce : tape +100 dans un montant pour l’ajouter au total, ou utilise « Ajouter au réel ». Partagé entre vos deux profils.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>';
-  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0),paid=v[3]===key;
-    h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois"><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="cd.${i}.1" value="${v[1]||0}"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="cd.${i}.2" value="${v[2]||0}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${qa('cd',i)}${instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=cdR(v,key),w=p?Math.min(100,r/p*100):(r?100:0),paid=v[3]===key;
+    h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois"><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="cd.${i}.1" value="${v[1]||0}"><input type="text" inputmode="decimal" data-calc title="${hTitle('cd',v)}" data-p="cd.${i}.2" value="${r}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${qa('cd',i)}${instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
   return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div><div class="tot" style="${st}"><span>Déjà passé ce mois</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>Reste à passer</span><span>${f(rest)}</span></div></div>`};
 const NAVI={fixes:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',prev:'<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',com:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',proj:'<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',cre:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',epa:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'};
+NAVI.cmp='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>';
 const NAVSET='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',NAVOUT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
-const chartBox=pts=>{const W=600,H=240,pl=46,pr=14,pt=30,pb=30,vals=pts.map(p=>p[2]),mn=Math.min(0,...vals),mx=Math.max(0,...vals),rg=(mx-mn)||1;
+const chartBox=(pts,title)=>{const W=600,H=240,pl=46,pr=14,pt=30,pb=30,vals=pts.map(p=>p[2]),mn=Math.min(0,...vals),mx=Math.max(0,...vals),rg=(mx-mn)||1;
   const X=i=>pl+(W-pl-pr)*(pts.length>1?i/(pts.length-1):.5),Y=v=>pt+(H-pt-pb)*(1-(v-mn)/rg),fx=n=>n.toFixed(1);
   const line=pts.map((p,i)=>(i?'L':'M')+fx(X(i))+','+fx(Y(p[2]))).join(' ');
   const area=line+' L'+fx(X(pts.length-1))+','+fx(Y(mn))+' L'+fx(X(0))+','+fx(Y(mn))+' Z';
   const ticks=[mn,(mn+mx)/2,mx].map(v=>`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${fx(Y(v))}" y2="${fx(Y(v))}"/><text x="${pl-8}" y="${fx(Y(v)+4)}" text-anchor="end">${Math.round(v)}</text>`).join('');
   const dots=pts.map((p,i)=>`<circle class="dot" cx="${fx(X(i))}" cy="${fx(Y(p[2]))}" r="5"/><text x="${fx(X(i))}" y="${H-8}" text-anchor="middle">${esc(p[0])}</text>`).join('');
   const last=pts[pts.length-1];
-  return `<div class="box"><h2>Évolution du reste cumulé</h2><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reste cumulé sur 6 mois"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ac);stop-opacity:.5"/><stop offset="1" style="stop-color:var(--ac);stop-opacity:0"/></linearGradient></defs>${ticks}<path d="${area}" fill="url(#cg)"/><path class="ln" d="${line}"/>${dots}<text class="vl" x="${fx(Math.min(X(pts.length-1),W-pr-30))}" y="${fx(Y(last[2])-12)}" text-anchor="middle">${esc(f(last[2]))}</text></svg></div>`};
+  return `<div class="box"><h2>${title||'Évolution du reste cumulé'}</h2><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reste cumulé sur 6 mois"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ac);stop-opacity:.5"/><stop offset="1" style="stop-color:var(--ac);stop-opacity:0"/></linearGradient></defs>${ticks}<path d="${area}" fill="url(#cg)"/><path class="ln" d="${line}"/>${dots}<text class="vl" x="${fx(Math.min(X(pts.length-1),W-pr-30))}" y="${fx(Y(last[2])-12)}" text-anchor="middle">${esc(f(last[2]))}</text></svg></div>`};
 const bilanBox=(inc,fx,vp,vr,st0)=>{const L=(a,b,c,w)=>`<div class="tot" style="margin:${w?'8px':'0'} 0 0;padding:${w?'8px':'0'} 0 0;${w?'':'border:0;'}font-weight:${w?600:400}"><span>${a}</span><span class="${c||''}">${b}</span></div>`,
     tp=fx+vp,ep=st0+inc-tp,er=st0+inc-fx-vr;
   return `<div class="box"><h2>Bilan du mois</h2>`+(st0?L('Solde au 1er du mois',f(st0)):'')+L('Revenus du mois','+ '+f(inc))+L('Charges fixes','− '+f(fx))+L('Budgets variables prévus','− '+f(vp))+L('Total prévu des dépenses',f(tp),'',1)+L('Reste prévu en fin de mois',f(ep),cl(ep),1)+L('Avec les dépenses réelles ('+f(vr)+' de variables)',f(er),cl(er))+`</div>`};
+const cdR=(x,key)=>x[5]===key?(+x[2]||0):0;
+const snapNow=()=>{syncDiv();const key=ymKey(new Date()),cdA=S.cd.filter(x=>inWin(x[4],key)),by={};
+  S.vars.forEach(x=>{by[x[0]||'—']=[+x[1]||0,+x[2]||0]});
+  return{rev:sum(actv(S.revenus,key)),fix:sum(actv(S.fixes,key)),vp:sum(S.vars,1),vr:sum(S.vars,2),by,cdp:sum(cdA,1),cdr:cdA.reduce((t,x)=>t+cdR(x,key),0)}};
+// Historique : une photo du mois en cours est mise à jour à chaque enregistrement ; celle du mois précédent reste figée.
+const snapUpdate=()=>{if(!S.hist)S.hist={};const key=ymKey(new Date()),n=snapNow(),o=JSON.stringify(S.hist[key]);S.hist[key]=n;
+  const ks=Object.keys(S.hist).sort();while(ks.length>14)delete S.hist[ks.shift()];return JSON.stringify(n)!==o};
+const MNF=k=>{const q=k.split('-').map(Number);return new Date(q[0],q[1]-1,1).toLocaleDateString('fr-FR',{month:'long'})};
+const MNS=k=>{const q=k.split('-').map(Number);return new Date(q[0],q[1]-1,1).toLocaleDateString('fr-FR',{month:'short'}).replace('.','')};
+const PAL=['#cf9fca','#8fb8de','#9bd1b0','#e6c27a','#e29b8d','#a79cd9','#b8b8b8'];
+const barChart=(labels,series)=>{const W=600,H=240,pl=46,pr=10,pt=16,pb=40,mx=Math.max(1,...series.flatMap(s=>s.v)),n=labels.length,gw=(W-pl-pr)/n,bw=Math.min(26,(gw-8)/series.length),Y=v=>pt+(H-pt-pb)*(1-v/mx),fx=x=>x.toFixed(1);
+  const grid=[0,mx/2,mx].map(v=>`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${fx(Y(v))}" y2="${fx(Y(v))}"/><text x="${pl-8}" y="${fx(Y(v)+4)}" text-anchor="end">${Math.round(v)}</text>`).join('');
+  const bars=labels.map((l,i)=>{const gx=pl+gw*i,tw=series.length*bw+(series.length-1)*4,x0=gx+(gw-tw)/2;
+    return series.map((s,j)=>{const y=Y(s.v[i]);return `<rect class="b${j}" x="${fx(x0+j*(bw+4))}" y="${fx(y)}" width="${fx(bw)}" height="${fx(Math.max(0,Y(0)-y))}" rx="5"/>`}).join('')+`<text x="${fx(gx+gw/2)}" y="${H-14}" text-anchor="middle">${esc(l.length>9?l.slice(0,8)+'…':l)}</text>`}).join('');
+  return `<div class="lgd">${series.map((s,j)=>`<span><i class="b${j}"></i>${esc(s.n)}</span>`).join('')}</div><svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${grid}${bars}</svg>`};
+const donut=sl=>{sl=sl.filter(x=>x[1]>0);const tot=sl.reduce((t,x)=>t+x[1],0);if(!tot)return '<p class="note">Rien à répartir pour l’instant.</p>';
+  const R=78,r=48,cx=90,cy=90,P=(a,q)=>[(cx+q*Math.cos(a)).toFixed(2),(cy+q*Math.sin(a)).toFixed(2)];let a=-Math.PI/2;
+  const arcs=sl.map((x,i)=>{const da=x[1]/tot*2*Math.PI,c=PAL[i%PAL.length];
+    if(sl.length===1)return `<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="${c}" stroke-width="${R-r}"/>`;
+    const a2=a+da,big=da>Math.PI?1:0,p1=P(a,R),p2=P(a2,R),p3=P(a2,r),p4=P(a,r);a=a2;
+    return `<path d="M${p1[0]},${p1[1]} A${R},${R} 0 ${big} 1 ${p2[0]},${p2[1]} L${p3[0]},${p3[1]} A${r},${r} 0 ${big} 0 ${p4[0]},${p4[1]} Z" fill="${c}"/>`}).join('');
+  return `<div class="donutw"><svg class="donut" viewBox="0 0 180 180" role="img" aria-label="Répartition des dépenses prévues">${arcs}<text x="90" y="86" text-anchor="middle" class="dl">Total</text><text x="90" y="104" text-anchor="middle" class="vl">${esc(f(tot))}</text></svg><ul class="lg">${sl.map((x,i)=>`<li><span><i style="background:${PAL[i%PAL.length]}"></i>${esc(x[0])}</span><span>${f(x[1])} <small>${Math.round(x[1]/tot*100)} %</small></span></li>`).join('')}</ul></div>`};
+const cmpHTML=()=>{const key=ymKey(new Date()),pk=addM(key,-1),H=S.hist||{},cur=snapNow(),pre=H[pk],res=x=>x.rev-x.fix-x.vr;
+  const rows=[['Revenus','rev',1],['Charges fixes','fix',0],['Variables dépensés','vr',0],['Dépenses communes (réel)','cdr',0],['Reste réel du mois',null,1]],val=(x,k)=>k?(x[k]||0):res(x);
+  let t=`<div class="cmph"><span></span><span>${pre?MNF(pk):'Mois précédent'}</span><span>${MNF(key)}</span><span>Écart</span></div>`;
+  rows.forEach(r=>{const c=val(cur,r[1]),p=pre?val(pre,r[1]):null,d=p==null?null:c-p,pc=p?d/Math.abs(p)*100:null,flat=d==null||Math.abs(d)<0.005,cls=flat?'':((r[2]?d>0:d<0)?'pos':'neg');
+    t+=`<div class="cmpr"><span>${r[0]}</span><span>${p==null?'—':f(p)}</span><b>${f(c)}</b><span class="${cls}">${d==null?'—':(d>0?'+':'')+f(d)+(pc==null||flat?'':' <small>('+(pc>0?'+':'')+Math.round(pc)+' %)</small>')}</span></div>`});
+  let h=`<div class="box"><h2>Comparaison avec le mois précédent</h2>${pre?'':'<p class="note">Pas encore de mois précédent enregistré : l’historique se construit à partir d’aujourd’hui, la comparaison apparaîtra dès le mois prochain.</p>'}${t}</div>`;
+  const names=[...new Set(Object.keys(cur.by).concat(pre?Object.keys(pre.by):[]))].filter(n=>(cur.by[n]&&(cur.by[n][0]||cur.by[n][1]))||(pre&&pre.by[n]&&pre.by[n][1]));
+  h+=`<div class="box"><h2>Prévu et réel par poste</h2>${names.length?barChart(names,[{n:'Prévu',v:names.map(n=>(cur.by[n]||[0,0])[0])},{n:'Réel',v:names.map(n=>(cur.by[n]||[0,0])[1])}]):'<p class="note">Ajoute des budgets variables pour voir ce graphique.</p>'}</div>`;
+  if(pre&&names.length)h+=`<div class="box"><h2>Dépenses réelles : ${MNF(pk)} et ${MNF(key)}</h2>${barChart(names,[{n:MNF(pk),v:names.map(n=>(pre.by[n]||[0,0])[1])},{n:MNF(key),v:names.map(n=>(cur.by[n]||[0,0])[1])}])}</div>`;
+  h+=`<div class="box"><h2>Répartition du total prévu</h2>${donut([['Charges fixes',cur.fix]].concat(names.map(n=>[n,(cur.by[n]||[0,0])[0]])))}</div>`;
+  const all=Object.assign({},H,{[key]:cur}),ks=Object.keys(all).sort().slice(-6),pts=ks.map(k=>{const v=res(all[k]);return[MNS(k),v,v]});
+  h+=pts.length>1?chartBox(pts,'Reste réel mois par mois'):`<div class="box"><h2>Reste réel mois par mois</h2><p class="note">Le graphique apparaîtra dès que deux mois seront enregistrés.</p></div>`;
+  return h};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -325,12 +382,12 @@ function render(){
   if(tab=='prev'){
     h=`<div class="box"><h2>Budgets variables</h2><p class="note">Fixe un plafond, puis saisis ce que tu as déjà dépensé ce mois-ci. Astuce : tape +100 dans un montant pour l’ajouter au total, ou 64+100 pour additionner.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>`;
     S.vars.forEach((v,i)=>{const p=+v[1]||0,r=+v[2]||0,w=p?Math.min(100,r/p*100):(r?100:0);
-      h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="vars.${i}.1" value="${v[1]}"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="vars.${i}.2" value="${v[2]}"${/^divers/i.test(v[0])?' readonly title="Calculé depuis Dépenses diverses"':''}><button data-del="vars.${i}" aria-label="Supprimer">×</button>${/^divers/i.test(v[0])?'':qa('vars',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+      h+=`<div class="r" data-row="vars.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input data-p="vars.${i}.0" value="${esc(v[0])}" placeholder="Poste"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="vars.${i}.1" value="${v[1]}"><input type="text" inputmode="decimal" data-calc title="${hTitle('vars',v)}" data-p="vars.${i}.2" value="${v[2]}"${/^divers/i.test(v[0])?' readonly title="Calculé depuis Dépenses diverses"':''}><button data-del="vars.${i}" aria-label="Supprimer">×</button>${/^divers/i.test(v[0])?'':qa('vars',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
     h+=`<button class="add" data-add="vars">+ Ajouter un poste</button><div class="tot"><span>Prévu / réel</span><span>${f(vp)} / ${f(vr)}</span></div></div>${dvBox()}
     <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div>${bilanBox(inc,fx,vp,vr,st0)}`;
   }
   if(tab=='com'){
-    const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=sum(cdA,2),sp=a-dp,sr=a-dr;
+    const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=cdA.reduce((t,x)=>t+cdR(x,ymKey(new Date())),0),sp=a-dp,sr=a-dr;
     h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox()+
     `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses prévues</span><span class="${cl(sp)}">${f(sp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Apports − dépenses réelles</span><span class="${cl(sr)}">${f(sr)}</span></div>`+
     (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
@@ -349,6 +406,7 @@ function render(){
     h=chartBox(pts)+h;
   }
   if(tab=='cre')h=crd();
+  if(tab=='cmp')h=cmpHTML();
   if(tab=='epa')h=gl();
   if(tab!=='set')$('#view').innerHTML=h;
 }
@@ -365,13 +423,34 @@ const calc=(raw,prev)=>{const t=String(raw).replace(/\s/g,'').replace(/,/g,'.').
   if(!t)return 0;if(!/^[\d.+\-*/()]+$/.test(t))return null;
   try{const rel=t[0]==='+'||t[0]==='-',v=ev(rel?t.slice(1):t);if(!isFinite(v))return null;
     return Math.round((rel?(t[0]==='+'?prev+v:prev-v):v)*100)/100}catch(e){return null}};
-const qa=(k,i)=>`<div class="sub"><label>Ajouter au réel <input type="number" step="0.01" inputmode="decimal" id="qa-${k}-${i}" placeholder="ex. 100"></label><button type="button" class="btn g" data-a="qadd" data-v="${k}.${i}" style="padding:6px 14px;font-size:13px">+ Ajouter</button></div>`;
+// ---- Historique des ajouts sur le « réel » (commun et budgets variables) ----
+const HI=k=>k==='cd'?6:3;
+const hget=(k,x)=>{const h=x[HI(k)];return h&&h.m===ymKey(new Date())&&h.e?h.e:[]};
+const hlog=(k,x,entries,reset)=>{const key=ymKey(new Date()),today=ymd(new Date()),i=HI(k);let h=x[i];
+  if(!h||h.m!==key||reset)h={m:key,e:[]};entries.forEach(a=>h.e.push([a,today]));x[i]=h};
+const logCell=(k,x,raw,prev,val)=>{const t=String(raw).replace(/\s/g,'').replace(/,/g,'.'),rel=/^[+-]/.test(t);
+  if(t===''){hlog(k,x,[],true);return}
+  if(rel){const d=Math.round((val-prev)*100)/100,ex=hget(k,x);hlog(k,x,(ex.length||!prev)?[d]:[prev,d],false);return}
+  if(Math.abs(val-prev)<0.005)return;
+  hlog(k,x,/^\d*\.?\d+(\+\d*\.?\d+)+$/.test(t)?t.split('+').map(Number):[val],true)};
+const dfmt=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+const eqText=e=>{const sum=Math.round(e.reduce((t,a)=>t+a[0],0)*100)/100;
+  return f(sum)+' = '+e.map((a,i)=>i?(a[0]<0?' − '+f(-a[0]):' + '+f(a[0])):f(a[0])).join('')};
+const hTitle=(k,x)=>{const e=hget(k,x);return e.length>1?eqText(e):'Tape +100 pour ajouter, ou 64+100'};
+const bubble=(k,x)=>{const e=hget(k,x),key=ymKey(new Date()),tot=k==='cd'?cdR(x,key):(+x[2]||0),sum=Math.round(e.reduce((t,a)=>t+a[0],0)*100)/100;
+  return `<div class="bub"><b>${eqText(e)}</b><ul>${e.map((a,i)=>`<li><span>${a[0]<0?'− '+f(-a[0]):(i?'+ ':'')+f(a[0])}</span><small>${dfmt(a[1])}${i?'':' · départ'}</small></li>`).join('')}</ul>${Math.abs(sum-tot)>0.005?'<small>Le total affiché inclut d’autres ajustements.</small>':''}</div>`};
+let tipOpen=null;
+const qa=(k,i)=>{const x=S[k][i],id=k+'.'+i,e=hget(k,x);
+  return `<div class="sub"><label>Ajouter au réel <input type="number" step="0.01" inputmode="decimal" id="qa-${k}-${i}" placeholder="ex. 100"></label><button type="button" class="btn g" data-a="qadd" data-v="${id}" style="padding:6px 14px;font-size:13px">+ Ajouter</button>${e.length>1?`<button type="button" class="tipb" data-tip="${id}" aria-label="Voir le détail du total" title="${esc(eqText(e))}">i</button>`:''}</div>${e.length>1&&tipOpen===id?bubble(k,x):''}`};
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-tip]');if(!b)return;const id=b.dataset.tip;tipOpen=tipOpen===id?null:id;render()});
 function setP(p,v){const a=p.split('.');let o=S;for(let i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset.p)return;
-  let val;
-  if(t.dataset.calc!==undefined){const r=calc(t.value,+getP(t.dataset.p)||0);if(r===null){toast('Calcul impossible : '+t.value);render();return}val=r}
+  let val,prevV=0;
+  if(t.dataset.calc!==undefined){const pv=/^cd\.(\d+)\.2$/.exec(t.dataset.p);prevV=pv?cdR(S.cd[+pv[1]],ymKey(new Date())):(+getP(t.dataset.p)||0);const r=calc(t.value,prevV);if(r===null){toast('Calcul impossible : '+t.value);render();return}val=r}
   else val=t.dataset.n!==undefined?(parseFloat(t.value)||0):t.value;
   setP(t.dataset.p,val);
+  if(/^cd\.\d+\.2$/.test(t.dataset.p))S.cd[+t.dataset.p.split('.')[1]][5]=ymKey(new Date());
+  {const mr=/^(cd|vars)\.(\d+)\.2$/.exec(t.dataset.p);if(mr&&t.dataset.calc!==undefined)logCell(mr[1],S[mr[1]][+mr[2]],t.value,prevV,val)}
   const m=/^(fixes|cd)\.(\d+)\.[45]\.(t|n)$/.exec(t.dataset.p);
   if(m){const x=S[m[1]][+m[2]],v=x[m[1]==='cd'?4:5];if(v&&+v.t>0&&+v.n>0)x[1]=Math.round(v.t/v.n*100)/100}
   save();render()});
@@ -401,7 +480,7 @@ document.addEventListener('change',e=>{if(e.target.id!=='csv')return;
       else if(/DONALD|BUFFALO|UBER|RESTAURANT|BURGER/.test(L))g.restos+=a;
       else g.autres+=a;
       n++});
-    const set=(re,v)=>{const x=S.vars.find(z=>re.test(z[0]));if(x)x[2]=Math.round(v*100)/100};
+    const set=(re,v)=>{const x=S.vars.find(z=>re.test(z[0]));if(x){x[2]=Math.round(v*100)/100;x[3]=null}};
     set(/course/i,g.courses);set(/resto|fast/i,g.restos);set(/shop|loisir/i,g.autres);
     save();render();alert(n+' dépenses lues pour ce mois. Vérifie les montants.');
   })});
@@ -528,7 +607,7 @@ async function act(a,v){
     if(r.ok){toast('Mot de passe modifié.',1);openSettings()}else toast(r.j.error||'Échec.');return}
   if(a==='qadd'){const q=v.split('.'),el=document.getElementById('qa-'+q[0]+'-'+q[1]),n=parseFloat(String(el&&el.value||'').replace(',','.'));
     if(!n)return toast('Saisis un montant à ajouter.');
-    const x=S[q[0]][+q[1]],t=Math.round(((+x[2]||0)+n)*100)/100;x[2]=t;save();render();toast('+ '+f(n)+' → total '+f(t),1);return}
+    const x=S[q[0]][+q[1]],cur=q[0]==='cd'?cdR(x,ymKey(new Date())):(+x[2]||0),t=Math.round((cur+n)*100)/100;{const ex=hget(q[0],x);hlog(q[0],x,(ex.length||!cur)?[n]:[cur,n],false)}x[2]=t;if(q[0]==='cd')x[5]=ymKey(new Date());save();render();toast('+ '+f(n)+' → total '+f(t),1);return}
   if(a==='export')return $('#exp').click();
   if(a==='import')return $('#imp').click();
   const ac=val('ac'),done=(r,t)=>{if(r.ok){toast(t,1);openSettings()}else toast(r.j.error||'Échec.')};
@@ -593,10 +672,11 @@ function submitModal(){const k=modalK;if(!k)return;
   if(!nm&&!amt&&!r)return toast('Indique au moins un libellé ou un montant.');
   let row;
   if(k==='fixes'||k==='revenus'){row=[nm,amt,mc('m-e')?mv('m-ef'):'',d,mc('m-p')?key:''];if(inst)row[5]=inst}
-  else if(k==='cd'){row=[nm,amt,r,mc('m-p')?key:''];if(inst)row[4]=inst}
+  else if(k==='cd'){row=[nm,amt,r,mc('m-p')?key:''];if(inst)row[4]=inst;row[5]=key}
   else if(k==='divers')row=[nm,amt,mv('m-dt')||ymd(new Date())];
   else if(k==='vars')row=[nm,amt,r];
   else row=[nm,amt];
+  if((k==='cd'||k==='vars')&&r)hlog(k,row,[r],true);
   S[k].push(row);save();render();closeModal();toast('Ajouté.',1)}
 document.addEventListener('click',e=>{const id=e.target.id;if(id==='modal'||id==='mno')closeModal();else if(id==='mok')submitModal()});
 document.addEventListener('keydown',e=>{if(!modalK)return;if(e.key==='Escape')closeModal();else if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){e.preventDefault();submitModal()}});
@@ -621,7 +701,7 @@ render();
     if(!r.ok)throw 0;const j=await r.json();
     me=j.me;prefs={theme:me.theme||'auto',accent:me.accent||'',season:me.season||'auto'};applyPrefs();hdr();
     if(!j.state){S=me.owner?DEF():BLANK(j.shared);ready=true;save();render();return}
-    if(!ready||j.rev!==rev){rev=j.rev;S=j.state;const was=mig();const first=!ready;ready=true;if(was)save();
+    if(!ready||j.rev!==rev){rev=j.rev;S=j.state;const was=mig(),sn=snapUpdate();const first=!ready;ready=true;if(was||sn)save();
       const a=document.activeElement;if(first||(!(a&&a.tagName==='INPUT')&&!addFix))render()}
     st('Synchronisé')
   }catch(e){st('Hors ligne : nouvel essai en cours…')}};
