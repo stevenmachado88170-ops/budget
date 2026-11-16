@@ -307,12 +307,13 @@ const divMonth=()=>{const key=ymKey(new Date());return (S.divers||[]).reduce((t,
 const syncDiv=()=>{const dv=S.vars.find(x=>/^divers/i.test(x[0]));if(dv)dv[2]=Math.round(divMonth()*100)/100};
 const dvBox=()=>{const key=ymKey(new Date()),all=S.divers||[],idx=all.map((_,i)=>i).filter(i=>(all[i][2]||key).startsWith(key)),old=all.length-idx.length;
   return `<div class="box"><h2>Dépenses diverses</h2><p class="note">Achats ponctuels du mois (cadeaux, réparations, sorties…). Leur total alimente le poste « Divers » ci-dessus.</p>${idx.map(i=>row('divers',i)).join('')}<button class="add" data-add="divers">+ Ajouter une dépense</button><div class="tot"><span>Total du mois en cours</span><span>${f(divMonth())}</span></div>${old?`<p class="note" style="margin:8px 0 0">${old} dépense(s) des mois précédents conservée(s).</p>`:''}</div>`};
-const cdBox=()=>{const key=ymKey(new Date()),on=x=>inWin(x[4],key),A=S.cd.filter(on),P=sum(A,1),R=A.reduce((t,x)=>t+cdR(x,key),0),
+const cdBox=kind=>{const v2=kind==='v',key=ymKey(new Date()),on=x=>inWin(x[4],key),L=S.cd.filter(x=>(x[7]==='v')===v2),A=L.filter(on),P=sum(A,1),R=A.reduce((t,x)=>t+cdR(x,key),0),
     done=sum(A.filter(x=>x[3]===key),1),rest=sum(A.filter(x=>x[3]!==key),1),st='border:0;margin:3px 0 0;padding:0;font-weight:400;color:var(--mu)';
-  let h='<div class="box"><h2>Dépenses communes</h2><p class="note">Loyer, énergie, courses communes… Fixe le prévu, saisis le réel, coche ce qui est passé. Astuce : tape +100 dans un montant pour l’ajouter au total, ou utilise « Ajouter au réel ». Partagé entre vos deux profils.</p><div class="hd"><span>Prévu</span><span>Réel</span></div>';
-  S.cd.forEach((v,i)=>{const p=+v[1]||0,r=cdR(v,key),w=p?Math.min(100,r/p*100):(r?100:0),paid=v[3]===key;
-    h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span><input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois"><input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="Dépense"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="cd.${i}.1" value="${v[1]||0}"><input type="text" inputmode="decimal" data-calc title="${hTitle('cd',v)}" data-p="cd.${i}.2" value="${r}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${qa('cd',i)}${instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
-  return h+`<button class="add" data-add="cd">+ Ajouter une dépense</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div><div class="tot" style="${st}"><span>Déjà passé ce mois</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>Reste à passer</span><span>${f(rest)}</span></div></div>`};
+  let h=`<div class="box"><h2>${v2?'Budgets variables communs':'Dépenses communes'}</h2><p class="note">${v2?'Un plafond par poste (courses, sorties, essence…) et ce qui est déjà dépensé. Le réel repart à 0 chaque mois. Astuce : tape +100 dans le réel pour l’ajouter, ou utilise « Ajouter au réel ». Partagé entre vos deux profils.':'Loyer, énergie… Fixe le prévu, saisis le réel, coche ce qui est passé. Astuce : tape +100 dans un montant pour l’ajouter au total, ou utilise « Ajouter au réel ». Partagé entre vos deux profils.'}</p><div class="hd"><span>Prévu</span><span>Réel</span></div>`;
+  S.cd.forEach((v,i)=>{if((v[7]==='v')!==v2)return;const p=+v[1]||0,r=cdR(v,key),w=p?Math.min(100,r/p*100):(r?100:0),paid=!v2&&v[3]===key;
+    h+=`<div class="r${paid?' paid':''}${on(v)?'':' off'}" data-row="cd.${i}"><span class="g" data-g aria-label="Déplacer">⠿</span>${v2?'':`<input type="checkbox" class="pd" data-paid="cd.${i}" ${paid?'checked':''} title="Passé ce mois" aria-label="Passé ce mois">`}<input data-p="cd.${i}.0" value="${esc(v[0])}" placeholder="${v2?'Budget':'Dépense'}"><input type="text" inputmode="decimal" data-calc title="Tape +100 pour ajouter, ou 64+100" data-p="cd.${i}.1" value="${v[1]||0}"><input type="text" inputmode="decimal" data-calc title="${hTitle('cd',v)}" data-p="cd.${i}.2" value="${r}"><button data-del="cd.${i}" aria-label="Supprimer">×</button>${qa('cd',i)}${v2?'':instUI('cd',i)}</div><div class="bar"><i class="${r>p?'over':''}" style="width:${w}%"></i></div>`});
+  if(v2&&!L.length)h+='<p class="note">Aucun budget variable commun pour l’instant.</p>';
+  return h+`<button class="add" data-add="${v2?'cdv':'cd'}">+ Ajouter ${v2?'un budget variable':'une dépense'}</button><div class="tot"><span>Prévu / réel</span><span>${f(P)} / ${f(R)}</span></div>`+(v2?`<div class="tot" style="${st}"><span>Reste du budget</span><span class="${cl(P-R)}">${f(P-R)}</span></div>`:`<div class="tot" style="${st}"><span>Déjà passé ce mois</span><span>${f(done)}</span></div><div class="tot" style="${st}"><span>Reste à passer</span><span>${f(rest)}</span></div>`)+`</div>`};
 const NAVI={fixes:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',prev:'<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',com:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',proj:'<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',cre:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',epa:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'};
 NAVI.cmp='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>';
 const NAVSET='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',NAVOUT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
@@ -388,7 +389,7 @@ function render(){
   }
   if(tab=='com'){
     const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=cdA.reduce((t,x)=>t+cdR(x,ymKey(new Date())),0),sp=a-dp,sr=a-dr;
-    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox()+
+    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox('fix')+cdBox('v')+
     `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses prévues</span><span class="${cl(sp)}">${f(sp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Apports − dépenses réelles</span><span class="${cl(sr)}">${f(sr)}</span></div>`+
     (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
   }
@@ -426,19 +427,21 @@ const calc=(raw,prev)=>{const t=String(raw).replace(/\s/g,'').replace(/,/g,'.').
 // ---- Historique des ajouts sur le « réel » (commun et budgets variables) ----
 const HI=k=>k==='cd'?6:3;
 const hget=(k,x)=>{const h=x[HI(k)];return h&&h.m===ymKey(new Date())&&h.e?h.e:[]};
-const hlog=(k,x,entries,reset)=>{const key=ymKey(new Date()),today=ymd(new Date()),i=HI(k);let h=x[i];
-  if(!h||h.m!==key||reset)h={m:key,e:[]};entries.forEach(a=>h.e.push([a,today]));x[i]=h};
-const logCell=(k,x,raw,prev,val)=>{const t=String(raw).replace(/\s/g,'').replace(/,/g,'.'),rel=/^[+-]/.test(t);
-  if(t===''){hlog(k,x,[],true);return}
-  if(rel){const d=Math.round((val-prev)*100)/100,ex=hget(k,x);hlog(k,x,(ex.length||!prev)?[d]:[prev,d],false);return}
-  if(Math.abs(val-prev)<0.005)return;
-  hlog(k,x,/^\d*\.?\d+(\+\d*\.?\d+)+$/.test(t)?t.split('+').map(Number):[val],true)};
+const hlog=(k,x,entries,reset,kind)=>{const key=ymKey(new Date()),today=ymd(new Date()),i=HI(k);let h=x[i];
+  if(!h||h.m!==key||reset)h={m:key,e:[]};entries.forEach((a,j)=>h.e.push(kind&&j===entries.length-1?[a,today,kind]:[a,today]));x[i]=h};
+const logCell=(k,x,raw,prev,val)=>{const t=String(raw).replace(/\s/g,'').replace(/,/g,'.');
+  if(t===''||val===0){hlog(k,x,[],true);return}
+  const d=Math.round((val-prev)*100)/100;if(Math.abs(d)<0.005)return;
+  const ex=hget(k,x),ok=ex.length&&Math.abs(ex.reduce((s,a)=>s+a[0],0)-prev)<0.005;
+  if(ok){hlog(k,x,[d],false);return}
+  const pure=!/^[+-]/.test(t)&&/^\d*\.?\d+(\+\d*\.?\d+)+$/.test(t);
+  hlog(k,x,pure&&!prev?t.split('+').map(Number):(prev>0?[prev,d]:[d]),true)};
 const dfmt=d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
 const eqText=e=>{const sum=Math.round(e.reduce((t,a)=>t+a[0],0)*100)/100;
   return f(sum)+' = '+e.map((a,i)=>i?(a[0]<0?' − '+f(-a[0]):' + '+f(a[0])):f(a[0])).join('')};
 const hTitle=(k,x)=>{const e=hget(k,x);return e.length>1?eqText(e):'Tape +100 pour ajouter, ou 64+100'};
 const bubble=(k,x)=>{const e=hget(k,x),key=ymKey(new Date()),tot=k==='cd'?cdR(x,key):(+x[2]||0),sum=Math.round(e.reduce((t,a)=>t+a[0],0)*100)/100;
-  return `<div class="bub"><b>${eqText(e)}</b><ul>${e.map((a,i)=>`<li><span>${a[0]<0?'− '+f(-a[0]):(i?'+ ':'')+f(a[0])}</span><small>${dfmt(a[1])}${i?'':' · départ'}</small></li>`).join('')}</ul>${Math.abs(sum-tot)>0.005?'<small>Le total affiché inclut d’autres ajustements.</small>':''}</div>`};
+  return `<div class="bub"><b>${eqText(e)}</b><ul>${e.map((a,i)=>`<li><span>${a[0]<0?'− '+f(-a[0]):(i?'+ ':'')+f(a[0])}</span><small>${dfmt(a[1])}${i?(a[2]==='m'?' · saisie directe':''):' · départ'}</small></li>`).join('')}</ul>${Math.abs(sum-tot)>0.005?'<small>Le total affiché inclut d’autres ajustements.</small>':''}</div>`};
 let tipOpen=null;
 const qa=(k,i)=>{const x=S[k][i],id=k+'.'+i,e=hget(k,x);
   return `<div class="sub"><label>Ajouter au réel <input type="number" step="0.01" inputmode="decimal" id="qa-${k}-${i}" placeholder="ex. 100"></label><button type="button" class="btn g" data-a="qadd" data-v="${id}" style="padding:6px 14px;font-size:13px">+ Ajouter</button>${e.length>1?`<button type="button" class="tipb" data-tip="${id}" aria-label="Voir le détail du total" title="${esc(eqText(e))}">i</button>`:''}</div>${e.length>1&&tipOpen===id?bubble(k,x):''}`};
@@ -637,9 +640,9 @@ document.addEventListener('change',e=>{const t=e.target;
     save();render()}
   if(t.id==='animchk'){animOn=t.checked;try{localStorage.setItem('budget-anim',animOn?'1':'0')}catch(x){}document.documentElement.classList.toggle('noanim',!animOn);applyPrefs()}
   if(t.id==='nfc'){const w=document.getElementById('nfew');if(w)w.style.display=t.checked?'':'none'}});
-const MODAL=['cd','fixes','revenus','divers','vars','ca'];
-const MT={cd:'Nouvelle dépense commune',fixes:'Nouvelle charge fixe',revenus:'Nouveau revenu',divers:'Nouvelle dépense diverse',vars:'Nouveau poste de budget',ca:'Nouvel apport'};
-const MPH={cd:'Ex. Courses communes',fixes:'Ex. Assurance habitation',revenus:'Ex. Allocation CAF',divers:'Ex. Cadeau',vars:'Ex. Loisirs',ca:'Ex. Marie'};
+const MODAL=['cd','cdv','fixes','revenus','divers','vars','ca'];
+const MT={cd:'Nouvelle dépense commune',cdv:'Nouveau budget variable commun',fixes:'Nouvelle charge fixe',revenus:'Nouveau revenu',divers:'Nouvelle dépense diverse',vars:'Nouveau poste de budget',ca:'Nouvel apport'};
+const MPH={cd:'Ex. Courses communes',cdv:'Ex. Courses communes',fixes:'Ex. Assurance habitation',revenus:'Ex. Allocation CAF',divers:'Ex. Cadeau',vars:'Ex. Loisirs',ca:'Ex. Marie'};
 let modalK=null;
 const mv=id=>{const e=document.getElementById(id);return e?e.value:''},mc=id=>{const e=document.getElementById(id);return !!(e&&e.checked)};
 function openModal(k){modalK=k;
@@ -651,6 +654,7 @@ function openModal(k){modalK=k;
   const endd=ck('m-e','Date de fin')+`<div id="m-ew" style="display:none"><div class="fg">${fl('m-ef','Mois de fin','month')}</div></div>`;
   const name=`<div class="fg">${fl('m-l','Libellé','text','autocomplete="off" placeholder="'+MPH[k]+'"')}</div>`;
   const B={
+    cdv:name+`<div class="fg">${am('m-a','Prévu (plafond du mois, €)')}${am('m-r','Réel déjà dépensé (€)')}</div>`,
     cd:name+`<div class="fg">${am('m-a','Prévu (€)')}${am('m-r','Réel déjà dépensé (€)')}</div>`+ck('m-p','Déjà passé ce mois')+multi,
     fixes:name+`<div class="fg">${am('m-a','Montant (€)')}${day}</div>`+ck('m-p','Déjà passé ce mois')+multi+endd,
     revenus:name+`<div class="fg">${am('m-a','Montant (€)')}${day}</div>`+ck('m-p','Déjà reçu ce mois')+endd,
@@ -672,12 +676,13 @@ function submitModal(){const k=modalK;if(!k)return;
   if(!nm&&!amt&&!r)return toast('Indique au moins un libellé ou un montant.');
   let row;
   if(k==='fixes'||k==='revenus'){row=[nm,amt,mc('m-e')?mv('m-ef'):'',d,mc('m-p')?key:''];if(inst)row[5]=inst}
+  else if(k==='cdv'){row=[nm,amt,r,'',null,key,null,'v']}
   else if(k==='cd'){row=[nm,amt,r,mc('m-p')?key:''];if(inst)row[4]=inst;row[5]=key}
   else if(k==='divers')row=[nm,amt,mv('m-dt')||ymd(new Date())];
   else if(k==='vars')row=[nm,amt,r];
   else row=[nm,amt];
-  if((k==='cd'||k==='vars')&&r)hlog(k,row,[r],true);
-  S[k].push(row);save();render();closeModal();toast('Ajouté.',1)}
+  if((k==='cd'||k==='cdv'||k==='vars')&&r)hlog(k==='cdv'?'cd':k,row,[r],true);
+  S[k==='cdv'?'cd':k].push(row);save();render();closeModal();toast('Ajouté.',1)}
 document.addEventListener('click',e=>{const id=e.target.id;if(id==='modal'||id==='mno')closeModal();else if(id==='mok')submitModal()});
 document.addEventListener('keydown',e=>{if(!modalK)return;if(e.key==='Escape')closeModal();else if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){e.preventDefault();submitModal()}});
 document.addEventListener('change',e=>{const t=e.target;
