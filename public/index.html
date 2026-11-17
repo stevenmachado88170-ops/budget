@@ -363,6 +363,16 @@ const cmpHTML=()=>{const key=ymKey(new Date()),pk=addM(key,-1),H=S.hist||{},cur=
   const all=Object.assign({},H,{[key]:cur}),ks=Object.keys(all).sort().slice(-6),pts=ks.map(k=>{const v=res(all[k]);return[MNS(k),v,v]});
   h+=pts.length>1?chartBox(pts,'Reste réel mois par mois'):`<div class="box"><h2>Reste réel mois par mois</h2><p class="note">Le graphique apparaîtra dès que deux mois seront enregistrés.</p></div>`;
   return h};
+const comT=()=>{const key=ymKey(new Date()),a=sum(S.ca),A=S.cd.filter(x=>inWin(x[4],key)),F=A.filter(x=>x[7]!=='v'),V=A.filter(x=>x[7]==='v'),rr=l=>l.reduce((t,x)=>t+cdR(x,key),0),Pf=sum(F,1),Pv=sum(V,1),R=rr(F)+rr(V);
+  return{a,Pf,Pv,P:Pf+Pv,R,ep:a-Pf-Pv,er:a-R}};
+const comCards=()=>{const T=comT();
+  return `<div class="k"><small>Apports du mois</small><b>${f(T.a)}</b></div>
+  <div class="k"><small>Total prévu</small><b>${f(T.P)}</b><span class="sd">dont dépenses ${f(T.Pf)} · variables ${f(T.Pv)}</span></div>
+  <div class="k"><small>Reste prévu en fin de mois</small><b class="${cl(T.ep)}">${f(T.ep)}</b><span class="sd">apports − total prévu</span></div>
+  <div class="k"><small>Reste réel</small><b class="${cl(T.er)}">${f(T.er)}</b><span class="sd">avec les dépenses réelles</span></div>`};
+const comBilan=()=>{const T=comT(),L=(a,b,c,w)=>`<div class="tot" style="margin:${w?'8px':'0'} 0 0;padding:${w?'8px':'0'} 0 0;${w?'':'border:0;'}font-weight:${w?600:400}"><span>${a}</span><span class="${c||''}">${b}</span></div>`;
+  return `<div class="box"><h2>Bilan du mois · compte commun</h2>`+L('Apports du mois','+ '+f(T.a))+L('Dépenses communes prévues','− '+f(T.Pf))+L('Budgets variables communs prévus','− '+f(T.Pv))+L('Total prévu des dépenses',f(T.P),'',1)+L('Reste prévu en fin de mois',f(T.ep),cl(T.ep),1)+L('Avec les dépenses réelles ('+f(T.R)+' dépensés)',f(T.er),cl(T.er))+
+    (T.a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/T.a*100)} % des apports</p>`).join(''):'')+`</div>`};
 function render(){
   if(!ready){$('#view').innerHTML='<p class="note">Chargement…</p>';return}
   $('#sum').style.display=tab=='set'?'none':'';
@@ -371,7 +381,7 @@ function render(){
   syncDiv();
   const key=ymKey(new Date()),fx=sum(actv(S.fixes,key)),inc=sum(actv(S.revenus,key)),vp=sum(S.vars,1),vr=sum(S.vars,2);
   const rp=inc-fx-vp,rr=inc-fx-vr,st0=+S.start||0,totP=fx+vp,endP=rp+st0,endR=rr+st0;
-  $('#sum').innerHTML=`<div class="k"><small>Revenus du mois</small><b>${f(inc)}</b></div>
+  $('#sum').innerHTML=tab==='com'?comCards():`<div class="k"><small>Revenus du mois</small><b>${f(inc)}</b></div>
   <div class="k"><small>Total prévu</small><b>${f(totP)}</b><span class="sd">dont fixes ${f(fx)} · variables ${f(vp)}</span></div>
   <div class="k"><small>Reste prévu en fin de mois</small><b class="${cl(endP)}">${f(endP)}</b><span class="sd">${st0?'solde de départ inclus':'revenus − total prévu'}</span></div>
   <div class="k"><small>Reste réel</small><b class="${cl(endR)}">${f(endR)}</b><span class="sd">avec les dépenses réelles</span></div>`;
@@ -388,10 +398,7 @@ function render(){
     <div class="box"><h2>Importer un relevé</h2><p class="note">Fichier CSV exporté depuis BoursoBank : les dépenses par carte du mois en cours remplissent la colonne Réel (essence et virements exclus).</p><input type="file" accept=".csv,text/csv" id="csv"></div>${bilanBox(inc,fx,vp,vr,st0)}`;
   }
   if(tab=='com'){
-    const a=sum(S.ca),cdA=S.cd.filter(x=>inWin(x[4],ymKey(new Date()))),dp=sum(cdA,1),dr=cdA.reduce((t,x)=>t+cdR(x,ymKey(new Date())),0),sp=a-dp,sr=a-dr;
-    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox('fix')+cdBox('v')+
-    `<div class="box"><h2>Solde du compte commun</h2><div class="tot" style="border:0;margin:0;padding:0"><span>Apports − dépenses prévues</span><span class="${cl(sp)}">${f(sp)}</span></div><div class="tot" style="border:0;margin:6px 0 0;padding:0"><span>Apports − dépenses réelles</span><span class="${cl(sr)}">${f(sr)}</span></div>`+
-    (a?S.ca.map(x=>`<p class="note" style="margin:6px 0 0">${esc(x[0]||'—')} : ${Math.round((+x[1]||0)/a*100)} % des apports</p>`).join(''):'')+`</div>`;
+    h=list('ca','Apports au compte commun','Ce que chacun verse chaque mois. Partagé entre vos deux profils.')+cdBox('fix')+cdBox('v')+comBilan();
   }
   if(tab=='proj'){
     const d=new Date();let y=d.getFullYear(),m=d.getMonth(),cum=0,pts=[];
